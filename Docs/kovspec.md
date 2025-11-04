@@ -1,3 +1,27 @@
+# Követelmény-specifikáció
+
+## 1. Áttekintés
+
+A jelen dokumentum célja, hogy bemutassa a CastlingCreations megrendelésére készülő Knightly nevű alkalmazás alapvető céljait, funkcionális és nem funkcionális követelményeinek áttekintését, valamint a fejlesztés kontextusát.
+
+A Knightly egy modern, digitális sakkalkalmazás, amely kezdetben helyi hálózaton (LAN) keresztül teszi lehetővé két játékos számára, hogy valós időben mérkőzzenek meg egymással. A rendszer egy grafikus felhasználói felületen keresztül biztosítja a játék indítását, a szerver futtatását és a másik félhez történő csatlakozást.
+
+A projekt hosszú távú célja, hogy a Knightly egy online platformmá fejlődjön, amely hasonló módon működik, mint a népszerű sakkportálok (pl. chess.com): a felhasználók fiókot hozhatnak létre, bejelentkezhetnek, és egy központi szerveren keresztül kereshetnek, illetve indíthatnak mérkőzéseket.
+
+A fejlesztés első szakasza azonban a LAN-alapú verzió megvalósítására koncentrál, amely a sakkjátszma logikai alapjainak, a játékállapot kezelésének és a hálózati kommunikáció modelljének megvalósítását célozza. A későbbi online verzió ezekre az alapokra építkezve bővíthető tovább.
+
+## 2. Vágyálom rendszer
+A vágyálom rendszer célja egy teljes körű, modern online sakkplatform létrehozása, amely nemcsak a klasszikus sakkjáték digitális megvalósítását kínálja, hanem egy közösségi, versenyképes és kényelmes felhasználói élményt is biztosít. A hosszú távú cél, hogy a rendszer működése és felépítése a nagyobb nemzetközi sakkoldalakhoz (például a chess.com-hoz vagy a lichess.org-hoz) hasonló legyen, de saját, könnyen kezelhető és letisztult felülettel.
+
+A felhasználók a rendszerben saját profilt hozhatnak létre, amellyel be tudnak jelentkezni, és részt vehetnek online mérkőzéseken más játékosok ellen. A rendszer automatikusan párosítaná őket ellenfelekkel, de lehetőséget adna arra is, hogy barátokat hívjanak meg privát meccsekre. A lejátszott mérkőzések mentésre kerülnének, így a játékosok bármikor visszanézhetnék vagy elemezhetnék azokat.
+
+A játék mellett a felhasználók statisztikákat is láthatnának magukról, például nyerési arányt, aktuális értékszámot (rating), leggyakoribb megnyitásokat, illetve fejlődési tendenciát az idő során. A rendszer ezen felül egy egyszerű chat funkciót is tartalmazna, hogy a játékosok kommunikálhassanak egymással a játszmák közben vagy akár azokon kívül is.
+
+A vágyálom rendszer alapját egy központi szerver képezné, amely kezeli a felhasználói fiókokat, a bejelentkezéseket, a matchmaking folyamatot, valamint a játékok futását és szinkronizálását. A szerver a kliensalkalmazásokkal valós idejű adatkapcsolatot tartana fenn, így a játék során minden lépés azonnal megjelenne a másik játékosnál is.
+
+A platform célja a megbízható és folyamatos működés, akár nagyobb terhelés mellett is. A rendszer fejlesztése során kiemelt szempont lenne a biztonság (adatvédelem, csalás elleni védelem), a stabil hálózati kommunikáció, valamint a bővíthetőség – például ranglisták, versenyek vagy mobilalkalmazás későbbi integrálásának lehetősége.
+
+Összességében a vágyálom rendszer egy minden szempontból teljes értékű, közösségorientált sakkalkalmazás lenne, amely a mostani, helyi hálózaton működő változatból fejlődne tovább egy interneten keresztül bárhonnan elérhető platformmá.
 ## 4. Rendszer követelmények
 
 A rendszer célja egy kétjátékos sakkalkalmazás megvalósítása, amely alapvetően hálózati kapcsolat (LAN vagy internet) segítségével biztosítja a valós idejű játékot. A rendszer kliens–szerver architektúrán alapul, ahol az egyes komponensek jól elkülönülten, meghatározott feladatokat látnak el.
