@@ -1,10 +1,10 @@
-name: Engine Tests
+name: UI Tests
 
 on:
   workflow_dispatch:
 
 jobs:
-  engine-tests:
+  ui-tests:
     runs-on: self-hosted
 
     steps:
@@ -15,8 +15,8 @@ jobs:
         with:
           rust-version: stable
 
-      - name: Run Engine tests
+      - name: Run UI tests
         run: |
-          cd engine
+          cd ui
           pwd
           cargo test --verbose

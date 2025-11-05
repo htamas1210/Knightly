@@ -1,10 +1,10 @@
-name: Engine Tests
+name: Server Tests
 
 on:
   workflow_dispatch:
 
 jobs:
-  engine-tests:
+  server-tests:
     runs-on: self-hosted
 
     steps:
@@ -15,8 +15,8 @@ jobs:
         with:
           rust-version: stable
 
-      - name: Run Engine tests
+      - name: Run Server tests
         run: |
-          cd engine
+          cd server
           pwd
           cargo test --verbose
