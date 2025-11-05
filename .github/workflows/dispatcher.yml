@@ -44,50 +44,30 @@ jobs:
           echo "server=$SERVER" >> $GITHUB_OUTPUT
           echo "ui=$UI" >> $GITHUB_OUTPUT
 
-      - name: Trigger Engine Test
-        if: steps.check.outputs.engine == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'engine_test.yml',
-              ref: '${{ github.ref }}',
-              inputs: {
-                triggered_by: 'dispatch.yml',
-                branch: '${{ github.ref_name }}'
-              }
-            })
+  engine:
+    needs: dispatch
+    if: needs.determine.outputs.engine == 'true'
+    uses: ./engine_test.yml
+    with:
+      branch: ${{ github.ref_name }}
+    secrets: inherit
 
-      - name: Trigger Server Test
-        if: steps.check.outputs.server == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'server_test.yml',
-              ref: '${{ github.ref }}',
-              inputs: {
-                triggered_by: 'dispatch.yml',
-                branch: '${{ github.ref_name }}'
-              }
-            })
+  server:
+    needs: dispatch
+    if: needs.determine.outputs.server == 'true'
+    uses: ./server_test.yml
+    with:
+      branch: ${{ github.ref_name }}
+    secrets: inherit
 
-      - name: Trigger UI Test
-        if: steps.check.outputs.ui == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ui_test.yml',
-              ref: '${{ github.ref }}',
-              inputs: {
-                triggered_by: 'dispatch.yml',
-                branch: '${{ github.ref_name }}'
-              }
-            })
+  ui:
+    needs: dispatch
+    if: needs.determine.outputs.ui == 'true'
+    uses: ./ui_test.yml
+    with:
+      branch: ${{ github.ref_name }}
+    secrets: inherit
+
+
+
+
