@@ -46,24 +46,24 @@ jobs:
 
   engine:
     needs: dispatch
-    if: needs.determine.outputs.engine == 'true'
-    uses: ./engine_test.yml
+    if: needs.dispatch.outputs.engine == 'true'
+    uses: ./.github/workflows/engine_test.yml
     with:
       branch: ${{ github.ref_name }}
     secrets: inherit
 
   server:
     needs: dispatch
-    if: needs.determine.outputs.server == 'true'
-    uses: ./server_test.yml
+    if: needs.dispatch.outputs.server == 'true'
+    uses: ./.github/workflows/server_test.yml
     with:
       branch: ${{ github.ref_name }}
     secrets: inherit
 
   ui:
     needs: dispatch
-    if: needs.determine.outputs.ui == 'true'
-    uses: ./ui_test.yml
+    if: needs.dispatch.outputs.ui == 'true'
+    uses: ./.github/workflows/ui_test.yml
     with:
       branch: ${{ github.ref_name }}
     secrets: inherit
