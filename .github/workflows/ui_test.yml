@@ -1,0 +1,22 @@
+name: UI Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ui-tests:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Run UI tests
+        run: |
+          cd ui
+          pwd
+          cargo test --verbose
