@@ -30,3 +30,22 @@
 | Folyamatos tesztelés | A projekt minden commit után automatikusan tesztelődik. A pipeline lefuttatja a teszteket, és értesítést küld hibás build esetén. |
 | Folyamatos integráció | Az új funkciók beolvadásakor a rendszer automatikusan integrálja a változtatásokat, új buildet hoz létre, és frissíti a fejlesztői környezetet. |
 | Tesztadatok | A tesztadatok legyenek elérhetőek egy táblázatban, dátummal ellátva. (Google Sheets) |
+
+## A github workflow folyamata:
+
+A githubon tárolt kód minden feltöltésnél a kód mindig automatikus tesztelve van, egy workflow által. Ennek a működése:
+1. A brancheket a következő képpen kell elnevezni: Projekt/task_neve (a task neve a kanban tablabol jon).
+2. 3 projekt van a github repository-ban: Engine, Server és a UI. Ennek megfelelően a következőképpen kell kinézniük a brancheknek: 
+    - Engine/task_1
+    - Server/task_1
+    - UI/task_1
+    Erre azért van szükség mert a github workflow ezek alapján az elnevezések alapján fogja eldönteni melyik teszteket futtassa. Ha az Engine projekthez lett feltöltve kód, akkor csak az ahhoz tartozó teszteket futtassa.
+3. A workflow folyamat a következő:
+    Amikor feltöltődik a három projekt közül valamelyikére egy új commit. A github workflow megnézni mi a branch neve. Ezután letölti a projektet githubról, és lefuttatja azon projekt teszteit. A tesztek eredményét feltölti egy google táblazat fájlba, ahonnan bármikor visszenézhető. Minden teszt eredmény az annak megfelően elnevezett munkalapra kerül be (Engine, Server, UI), egymás alá táblázatos elrendezésben. Az oszlopok a következőek: Dátum, függvény neve, teszt bemenet, teszt kimenet, sikeres-e.
+    Amikor a main/master branchre kerül fel kód. A teszt az előbbiek alapján ugyanúgy lefut, csak itt mind a 3 projekt tesztje le fog futni és az eredmény egy main/master nevű munkalapra fog feltöltődni a táblázatban. Amint sikeresen lefut a tesztelés, elindul egy automatikus build, ami le fogja build-elni a projekteket. Ezután létrehoz egy új Release-t githubon, ahol beállítja a verzió számot a rust projektben beállított verzió számra, majd feltölti oda a fájlokat amiket a build hozott létre, és kiteszi ezt a buildet.
+
+
+A workflow 3 külön fáljba van bontva:
+1. A dispatcher (dispatch.yml). Ez indítja el a workflow-t ami teszteli a kódot a megfelelő branchen, elindítja a release workflow-t ami feltölti a master branchről buildelt projekt fájlokat.
+2. A teszter (tests.yml). Ez a workflow bele fog lépni a megfelelő projekt mappába és lefutattja a megírt teszteket, és feltölti az eredményt egy google spreadsheet-be.
+3. A release (release.yml). Amint sikeresek a tesztek elindul ez a workflow és lefordítja a kódot majd feltölti github-ra egy új release-ként
