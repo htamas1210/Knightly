@@ -1,0 +1,22 @@
+name: Engine Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  engine-tests:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Run Engine tests
+        run: |
+          cd engine
+          ls
+          cargo test --verbose

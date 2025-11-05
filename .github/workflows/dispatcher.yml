@@ -1,0 +1,65 @@
+name: Dispatcher
+
+on:
+  push:
+    branches:
+      - '**'   # minden branchre lefut
+
+jobs:
+  detect-and-dispatch:
+    runs-on: self-hosted # (sajat rpi-on fusson)
+
+    steps:
+      - name: Detect project from branch name
+        id: detect
+        run: |
+          BRANCH_NAME=${GITHUB_REF##*/}
+          echo "Branch name: $BRANCH_NAME"
+
+          if [[ "$BRANCH_NAME" == Engine/* ]]; then
+            echo "project=Engine" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH_NAME" == Server/* ]]; then
+            echo "project=Server" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH_NAME" == UI/* ]]; then
+            echo "project=UI" >> $GITHUB_OUTPUT
+          else
+            echo "project=unknown" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Engine tests
+        if: steps.detect.outputs.project == 'Engine'
+        uses: peter-evans/workflow-dispatch@v2
+        with:
+          workflow: "engine_test.yml"
+          ref: ${{ github.ref }}
+
+      - name: Trigger Server tests
+        if: steps.detect.outputs.project == 'Server'
+        uses: peter-evans/workflow-dispatch@v2
+        with:
+          workflow: "server_test.yml"
+          ref: ${{ github.ref }}
+
+      - name: Trigger UI tests
+        if: steps.detect.outputs.project == 'UI'
+        uses: peter-evans/workflow-dispatch@v2
+        with:
+          workflow: "ui_test.yml"
+          ref: ${{ github.ref }}
+
+      - name: Trigger all tests (main/master)
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        uses: peter-evans/workflow-dispatch@v2
+        with:
+          workflow: "engine_test.yml"
+          ref: ${{ github.ref }}
+      - uses: peter-evans/workflow-dispatch@v2
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        with:
+          workflow: "server_test.yml"
+          ref: ${{ github.ref }}
+      - uses: peter-evans/workflow-dispatch@v2
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        with:
+          workflow: "ui_test.yml"
+          ref: ${{ github.ref }}
