@@ -5,6 +5,9 @@ on:
     branches:
       - '**'   # minden branchre lefut
 
+permissions:
+  contents: write
+
 jobs:
   detect-and-dispatch:
     runs-on: self-hosted # (sajat rpi-on fusson)
@@ -25,6 +28,10 @@ jobs:
           else
             echo "project=unknown" >> $GITHUB_OUTPUT
           fi
+
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Trigger Engine tests
         if: steps.detect.outputs.project == 'Engine'
