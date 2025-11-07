@@ -61,7 +61,18 @@ jobs:
     if: needs.dispatch.outputs.ui == 'true'
     uses: ./.github/workflows/ui_test.yml
     secrets: inherit
-
+    
+  cleanup:
+    runs-on: self-hosted
+    needs: [engine, server, ui]
+    if: always()
+    steps:
+      - name: Final cleanup
+        run: |
+          echo "Final cleanup on self-hosted runner..."
+          cd "$GITHUB_WORKSPACE"
+          git clean -fdx
+          git reset --hard
 
 
 
