@@ -63,11 +63,15 @@ jobs:
     secrets: inherit
     
 
-  #test-data-upload:
-    #needs: [engine, server, ui]
-    #if: always()
+  test-data-upload:
+    needs: [engine, server, ui]
+    runs-on: self-hosted
+    if: always()
     #uses: ./.github/workflows/upload_data.yml
-    #secrets: inherit
+    steps:
+      - name: Temp turn off
+        run: |
+          echo "Uploading data to table"
 
   release:
     needs: test-data-upload
