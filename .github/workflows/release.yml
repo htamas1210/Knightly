@@ -82,16 +82,24 @@ jobs:
           cargo build --release --target x86_64-pc-windows-gnu
           pwd
           cp target/x86_64-pc-windows-gnu/release/ui.exe $(git rev-parse --show-toplevel)/release/windows/ui.exe
-
+      
+      - name: Compress build folders for upload
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          pwd
+          cd release/
+          zip linux.zip linux/
+          zip windows.zip windows/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ github.run_number }}"
           name: "Release v${{ github.run_number }}"
+          generate_release_notes: true
           files: |
-            release/linux/
-            release/windows/
+            release/linux.zip
+            release/windows.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
