@@ -70,11 +70,9 @@ jobs:
     needs: [engine, server, ui]
     runs-on: self-hosted
     if: always()
-    #uses: ./.github/workflows/upload_data.yml
-    steps:
-      - name: Temp turn off
-        run: |
-          echo "Uploading data to table"
+    uses: ./.github/workflows/upload_data.yml
+    secrets: inherit
+
 
   release:
     needs: test-data-upload
