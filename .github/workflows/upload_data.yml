@@ -13,7 +13,7 @@ jobs:
         
       - name: Install dependencies
         run: |
-          pip install gspread google-auth
+          pip install gspread google-auth --break-system-packages
 
       - name: Upload test_data.log to Google Sheets
         env:
