@@ -29,8 +29,8 @@ jobs:
           creds = json.load(open("service_account.json"))
           gc = gspread.service_account_from_dict(creds)
           sh = gc.open_by_key("${{ secrets.SPREADSHEET_ID }}")
-          v = subprocess.run(['git rev-parse --show-toplevel'], capture_output=True).stdout.decode()
-          print(v)
+          v = subprocess.run(['git','rev-parse','--show-toplevel'], capture_output=True).stdout.strip()
+          print(f"{v}/test_data.log")
 
           with open(f"{v}/test_data.log", "r") as f:
               lines = [line.strip() for line in f if line.strip()]
