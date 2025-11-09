@@ -84,7 +84,7 @@ jobs:
 
   cleanup:
     runs-on: self-hosted
-    needs: [engine, server, ui, test-data-upload]
+    needs: [engine, server, ui, test-data-upload, release]
     if: always()
     steps:
       - name: Final cleanup
