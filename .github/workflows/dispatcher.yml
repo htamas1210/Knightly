@@ -68,7 +68,6 @@ jobs:
 
   test-data-upload:
     needs: [engine, server, ui]
-    runs-on: self-hosted
     if: always()
     uses: ./.github/workflows/upload_data.yml
     secrets: inherit
