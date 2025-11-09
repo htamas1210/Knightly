@@ -1,0 +1,57 @@
+name: Upload Test Results to Google Sheets
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python (for Google Sheets API)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread google-auth
+
+      - name: Upload test_data.log to Google Sheets
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > service_account.json
+          
+          python <<'PYCODE'
+          import gspread, json, time
+
+          # credentials
+          creds = json.load(open("service_account.json"))
+          gc = gspread.service_account_from_dict(creds)
+          sh = gc.open_by_key("${{ secrets.SPREADSHEET_ID }}")
+
+          with open("test_data.log", "r") as f:
+              lines = [line.strip() for line in f if line.strip()]
+
+          project = lines[0].lower()
+          worksheet = sh.worksheet(project)
+
+          # project name
+          data = lines[1:]
+
+          #blank rows
+          existing_rows = len(worksheet.get_all_values())
+          start_row = existing_rows + 3
+
+          # Split data into columns (by spaces)
+          rows_to_append = [row.split() for row in data]
+
+          for i, row in enumerate(rows_to_append):
+              worksheet.insert_row(row, start_row + i)
+
+          print(f"Uploaded {len(rows_to_append)} rows to '{project}' tab.")
+          PYCODE

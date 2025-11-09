@@ -1,0 +1,97 @@
+name: Release build
+
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and release (master only)
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Engine for Linux
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          pwd
+          mkdir release/linux -p
+          cd engine/
+          rustup target add x86_64-unknown-linux-gnu
+          cargo build --release --target x86_64-unknown-linux-gnu
+          pwd
+          cp target/x86_64-unknown-linux-gnu/release/engine $(git rev-parse --show-toplevel)/release/linux/engine
+
+      - name: Build Server for Linux
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          pwd
+          mkdir release/linux -p
+          cd server/
+          rustup target add x86_64-unknown-linux-gnu
+          cargo build --release --target x86_64-unknown-linux-gnu
+          pwd
+          cp target/x86_64-unknown-linux-gnu/release/server $(git rev-parse --show-toplevel)/release/linux/server
+
+      - name: Build UI for Linux
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          pwd
+          mkdir release/linux -p
+          cd ui/
+          rustup target add x86_64-unknown-linux-gnu
+          cargo build --release --target x86_64-unknown-linux-gnu
+          pwd
+          cp target/x86_64-unknown-linux-gnu/release/ui $(git rev-parse --show-toplevel)/release/linux/ui
+
+
+      - name: Build Engine for Windows
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          pwd
+          mkdir release/windows -p
+          cd engine/
+          rustup target add x86_64-pc-windows-gnu
+          cargo build --release --target x86_64-pc-windows-gnu
+          pwd
+          cp target/x86_64-pc-windows-gnu/release/engine.exe $(git rev-parse --show-toplevel)/release/windows/engine.exe
+
+      - name: Build Server for Windows
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          pwd
+          mkdir release/windows -p
+          cd server/
+          rustup target add x86_64-pc-windows-gnu
+          cargo build --release --target x86_64-pc-windows-gnu
+          pwd
+          cp target/x86_64-pc-windows-gnu/release/server.exe $(git rev-parse --show-toplevel)/release/windows/server.exe
+
+      - name: Build UI for Windows
+        run: |
+          cd $(git rev-parse --show-toplevel)
+          pwd
+          mkdir release/windows -p
+          cd ui/
+          rustup target add x86_64-pc-windows-gnu
+          cargo build --release --target x86_64-pc-windows-gnu
+          pwd
+          cp target/x86_64-pc-windows-gnu/release/ui.exe $(git rev-parse --show-toplevel)/release/windows/ui.exe
+
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ github.run_number }}"
+          name: "Release v${{ github.run_number }}"
+          files: |
+            release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+

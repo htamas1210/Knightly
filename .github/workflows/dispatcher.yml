@@ -62,9 +62,22 @@ jobs:
     uses: ./.github/workflows/ui_test.yml
     secrets: inherit
     
+
+  #test-data-upload:
+    #needs: [engine, server, ui]
+    #if: always()
+    #uses: ./.github/workflows/upload_data.yml
+    #secrets: inherit
+
+  release:
+    needs: test-data-upload
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+
   cleanup:
     runs-on: self-hosted
-    needs: [engine, server, ui]
+    needs: [engine, server, ui, test-data-upload]
     if: always()
     steps:
       - name: Final cleanup
