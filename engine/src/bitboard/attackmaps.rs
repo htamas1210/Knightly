@@ -1,7 +1,14 @@
 use once_cell::sync::Lazy;
 
+// KING_ATTACK_MAP[<square_index>]
 pub static KING_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
   let table: [u64; 64] = [0u64; 64];
+  return table;
+});
+
+// PAWN_ATTACK_MAP
+pub static PAWN_ATTACK_MAP: Lazy<[[u64; 2]; 64]> = Lazy::new(|| {
+  let table: [[u64; 2]; 64] = [[0u64; 2]; 64];
   return table;
 });
 
@@ -10,7 +17,6 @@ pub static KING_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
   #[test]
   fn test_king_attack_map() {
@@ -50,5 +56,53 @@ mod tests {
     // test for center
     assert_eq!(KING_ATTACK_MAP[center_index], center_attack_map);
 
+  }
+
+  #[test]
+  fn test_pawn_attack_map() {
+
+    // test setup for white sides
+    let white_side_indexes: [usize; 2] = [24, 31];
+    let white_side_attack_maps: [u64; 2] = [
+      (1 << 33),
+      (1 << 38)
+    ];
+    // tests for white sides
+    for index in 0..2 {
+      assert_eq!(PAWN_ATTACK_MAP[white_side_indexes[index]][0], white_side_attack_maps[index])
+    }
+
+    // test setup for black sides
+    let black_side_indexes: [usize; 2] = [32, 39];
+    let black_side_attack_maps: [u64; 2] = [
+      (1 << 25),
+      (1 << 30)
+    ];
+    // tests for black sides
+    for index in 0..2 {
+      assert_eq!(PAWN_ATTACK_MAP[black_side_indexes[index]][1], black_side_attack_maps[index])
+    }
+
+    // test setup for white center
+    let white_center_indexes: [usize; 2] = [11, 12];
+    let white_center_attack_maps: [u64; 2] = [
+      (1 << 19) | (1 << 21),
+      (1 << 20) | (1 << 22)
+    ];
+    // tests for white center
+    for index in 0..2 {
+      assert_eq!(PAWN_ATTACK_MAP[white_center_indexes[index]][0], white_center_attack_maps[index])
+    }
+
+    // test setup for black center
+    let black_center_indexes: [usize; 2] = [51, 52];
+    let black_center_attack_maps: [u64; 2] = [
+      (1 << 42) | (1 << 44),
+      (1 << 43) | (1 << 45)
+    ];
+    // tests for black center
+    for index in 0..2 {
+      assert_eq!(PAWN_ATTACK_MAP[black_center_indexes[index]][1], black_center_attack_maps[index])
+    }
   }
 }
