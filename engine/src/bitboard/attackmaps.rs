@@ -2,8 +2,9 @@ use once_cell::sync::Lazy;
 
 /*
  EXPLANATIONS:
- > square index: 8 * rank number + file number (a-h = 0-7)
+ > square_index: 8 * rank number + file number (a-h = 0-7)
  > side: white = 0, black = 1
+ > direction_index: 0..8 = [E, NE, N, NW, W, SW, S, SE]
 */
 
 // KING_ATTACK_MAP[<square_index>]
@@ -18,9 +19,15 @@ pub static PAWN_ATTACK_MAP: Lazy<[[u64; 2]; 64]> = Lazy::new(|| {
   return table;
 });
 
-// KINGHT_ATTACK_MAP[<square_index>]
+// KNIGHT_ATTACK_MAP[<square_index>]
 pub static KNIGHT_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
   let table: [u64; 64] = [0u64; 64];
+  return table;
+});
+
+// RAY_TABLE[<square_index>][<direction_index>]
+pub static RAY_TABLE: Lazy<[[u64; 8]; 64]> = Lazy::new(|| {
+  let table: [[u64; 8]; 64] = [[0u64; 8]; 64];
   return table;
 });
 
@@ -156,5 +163,27 @@ mod tests {
 
     // test for center
     assert_eq!(KNIGHT_ATTACK_MAP[center_index], center_attack_map);
+  }
+
+  #[test]
+  fn test_ray_table() {
+
+    // test setup for all directions from center
+    let starting_square_index: usize = 27;
+    let ray_masks: [u64; 8] = [
+      (1 << 28) | (1 << 29) | (1 << 30) | (1 << 31),
+      (1 << 36) | (1 << 45) | (1 << 54) | (1 << 63),
+      (1 << 35) | (1 << 43) | (1 << 51) | (1 << 59),
+      (1 << 34) | (1 << 41) | (1 << 48),
+      (1 << 26) | (1 << 25) | (1 << 24),
+      (1 << 18) | (1 << 9) | (1 << 0),
+      (1 << 19) | (1 << 11) | (1 << 3),
+      (1 << 20) | (1 << 13) | (1 << 6)
+    ];
+
+    // tests for all directions from starting_square
+    for direction in 0..8 {
+      assert_eq!(RAY_TABLE[starting_square_index][direction], ray_masks[direction]);
+    }
   }
 }
