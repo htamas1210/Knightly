@@ -1,16 +1,30 @@
 use once_cell::sync::Lazy;
 
+/*
+ EXPLANATIONS:
+ > square index: 8 * rank number + file number (a-h = 0-7)
+ > side: white = 0, black = 1
+*/
+
 // KING_ATTACK_MAP[<square_index>]
 pub static KING_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
   let table: [u64; 64] = [0u64; 64];
   return table;
 });
 
-// PAWN_ATTACK_MAP
+// PAWN_ATTACK_MAP[<square_index>][<side>]
 pub static PAWN_ATTACK_MAP: Lazy<[[u64; 2]; 64]> = Lazy::new(|| {
   let table: [[u64; 2]; 64] = [[0u64; 2]; 64];
   return table;
 });
+
+// KINGHT_ATTACK_MAP[<square_index>]
+pub static KNIGHT_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
+  let table: [u64; 64] = [0u64; 64];
+  return table;
+});
+
+
 
 // <----- TESTS ----->
 
@@ -104,5 +118,43 @@ mod tests {
     for index in 0..2 {
       assert_eq!(PAWN_ATTACK_MAP[black_center_indexes[index]][1], black_center_attack_maps[index])
     }
+  }
+
+  #[test]
+  fn test_knight_attack_map() {
+    // test setup for corners [SW, SE, NW, NE]
+    let corner_indexes: [usize; 4] = [0, 7, 56, 63];
+    let corner_attack_maps: [u64; 4] = [
+      (1 << 17) | (1 << 10),
+      (1 << 13) | (1 << 22),
+      (1 << 41) | (1 << 50),
+      (1 << 46) | (1 << 53)
+    ];
+
+    // tests for corners
+    for index in 0..4 {
+      assert_eq!(KNIGHT_ATTACK_MAP[corner_indexes[index]], corner_attack_maps[index]);
+    }
+
+    // test setup for sides [S, E, W, N]
+    let side_indexes: [usize; 4] = [3, 31, 32, 60];
+    let side_attack_maps: [u64; 4] = [
+      (1 << 9) | (1 << 13) | (1 << 18) | (1 << 20),
+      (1 << 14) | (1 << 21) | (1 << 37) | (1 << 46),
+      (1 << 17) | (1 << 26) | (1 << 42) | (1 << 49),
+      (1 << 43) | (1 << 45) | (1 << 50) | (1 << 54)
+    ];
+
+    // tests for sides
+    for index in 0..4 {
+      assert_eq!(KNIGHT_ATTACK_MAP[side_indexes[index]], side_attack_maps[index]);
+    }
+
+    // test setup for center
+    let center_index: usize = 27;
+    let center_attack_map: u64 = (1 << 10) | (1 << 12) | (1 << 17) | (1 << 21) | (1 << 33) | (1 << 37) | (1 << 42) | (1 << 44);
+
+    // test for center
+    assert_eq!(KNIGHT_ATTACK_MAP[center_index], center_attack_map);
   }
 }
