@@ -15,7 +15,7 @@ const GH_FILE: u64 = 0xC0C0_C0C0_C0C0_C0C0;
 // KING_ATTACK_MAP[<square_index>]
 pub static KING_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
   let mut table: [u64; 64] = [0u64; 64];
-  
+
   for sq in 0..64 {
     let king: u64 = 1 << sq;
 
@@ -29,7 +29,18 @@ pub static KING_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
 
 // PAWN_ATTACK_MAP[<square_index>][<side>]
 pub static PAWN_ATTACK_MAP: Lazy<[[u64; 2]; 64]> = Lazy::new(|| {
-  let table: [[u64; 2]; 64] = [[0u64; 2]; 64];
+  let mut table: [[u64; 2]; 64] = [[0u64; 2]; 64];
+
+  for sq in 0..64 {
+    let pawn: u64 = 1 << sq;
+    table[sq][0] |= (pawn << 9) & !A_FILE;
+    table[sq][0] |= (pawn << 7) & !H_FILE;
+  }
+  for sq in 0..64 {
+    let pawn: u64 = 1 << sq;
+    table[sq][1] |= (pawn >> 9) & !H_FILE;
+    table[sq][1] |= (pawn >> 7) & !A_FILE;
+  }
   return table;
 });
 
@@ -121,8 +132,8 @@ mod tests {
     // test setup for white center
     let white_center_indexes: [usize; 2] = [11, 12];
     let white_center_attack_maps: [u64; 2] = [
-      (1 << 19) | (1 << 21),
-      (1 << 20) | (1 << 22)
+      (1 << 18) | (1 << 20),
+      (1 << 19) | (1 << 21)
     ];
     // tests for white center
     for index in 0..2 {
