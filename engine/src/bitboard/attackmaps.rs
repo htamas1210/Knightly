@@ -14,7 +14,16 @@ const GH_FILE: u64 = 0xC0C0_C0C0_C0C0_C0C0;
 
 // KING_ATTACK_MAP[<square_index>]
 pub static KING_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
-  let table: [u64; 64] = [0u64; 64];
+  let mut table: [u64; 64] = [0u64; 64];
+  
+  for sq in 0..64 {
+    let king: u64 = 1 << sq;
+
+    let left_attacks: u64 = king << 7 | king >> 1 | king >> 9;
+    let right_attacks: u64 = king << 1 | king << 9 | king >> 7;
+
+    table[sq] = (left_attacks & !H_FILE) | (right_attacks & !A_FILE) | king << 8 | king >> 8;
+  }
   return table;
 });
 
