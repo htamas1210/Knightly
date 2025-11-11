@@ -26,13 +26,13 @@ jobs:
           SERVER=false
           UI=false
 
-          if [["$BRANCH" == *"Engine"*]] ; then
+          if [[ "$BRANCH" == *"Engine"* ]] ; then
             ENGINE=true
           fi
-          if [["$BRANCH" == *"Server"*]] ; then
+          if [[ "$BRANCH" == *"Server"* ]] ; then
             SERVER=true
           fi
-          if [["$BRANCH" == *"UI"*]] ; then
+          if [[ "$BRANCH" == *"UI"* ]] ; then
             UI=true
           fi
 
