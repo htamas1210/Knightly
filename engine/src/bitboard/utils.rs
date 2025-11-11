@@ -55,7 +55,7 @@ mod tests {
     // tests
     for index in 0..6 {
       let mut test_value = test_values[index];
-      assert_eq!(pop_lsb(&mut test_value), expected_values[index])
+      assert_eq!(pop_msb(&mut test_value), expected_values[index])
     }
   }
 
