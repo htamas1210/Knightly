@@ -1,7 +1,8 @@
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
-use tokio_tungstenite::accept_async;
+use tokio_tungstenite::{accept_async, connect_async};
+use url::Url;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Message {
@@ -25,7 +26,17 @@ async fn main() {
             while let Some(Ok(msg)) = read.next().await {
                 if msg.is_text() {
                     let txt = msg.to_text().unwrap();
-                    if let Ok(json) = serde_json::from_str::<Message>(txt) {}
+                    if let Ok(json) = serde_json::from_str::<Message>(txt) {
+                        println!("Recieved: {:?}", json);
+
+                        //for testing the write channel, we send back the
+                        //same data the client sent
+                        let reply = serde_json::to_string(&json).unwrap();
+                        write
+                            .send(tokio_tungstenite::tungstenite::Message::Text(reply))
+                            .await
+                            .unwrap();
+                    }
                 }
             }
         });
