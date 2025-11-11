@@ -1,5 +1,10 @@
 use once_cell::sync::Lazy;
 
+const A_FILE: u64 = 0x0101_0101_0101_0101;
+const H_FILE: u64 = 0x8080_8080_8080_8080;
+const AB_FILE: u64 = 0x0303_0303_0303_0303;
+const GH_FILE: u64 = 0xC0C0_C0C0_C0C0_C0C0;
+
 /*
  EXPLANATIONS:
  > square_index: 8 * rank number + file number (a-h = 0-7)
