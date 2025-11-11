@@ -7,6 +7,10 @@ pub fn pop_msb(value: &mut u64) -> usize {
   return 0;
 }
 
+pub fn notation_from_square_number(sq: u8) -> String {
+  return String::new();
+}
+
 
 // <----- TESTS ----->
 
@@ -52,6 +56,28 @@ mod tests {
     for index in 0..6 {
       let mut test_value = test_values[index];
       assert_eq!(pop_lsb(&mut test_value), expected_values[index])
+    }
+  }
+
+  #[test]
+  fn notation_from_square_number_test() {
+    // test setup
+    let square_indices: [u8; 8] = [1, 12, 22, 27, 32, 47, 53, 58];
+    let notations: [String; 8] = [
+      String::from("b1"),
+      String::from("e2"),
+      String::from("g3"),
+      String::from("d4"),
+      String::from("a5"),
+      String::from("h6"),
+      String::from("f7"),
+      String::from("c8")
+    ];
+
+    // tests
+    for index in 0..8 {
+      let notation = notation_from_square_number(square_indices[index].clone());
+      assert_eq!(notation, notations[index]);
     }
   }
 }
