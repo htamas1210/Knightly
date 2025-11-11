@@ -6,7 +6,9 @@ pub fn pop_lsb(value: &mut u64) -> usize {
 }
 
 pub fn pop_msb(value: &mut u64) -> usize {
-  return 0;
+  let idx = 63 - value.leading_zeros() as usize;
+  *value &= !(1 << idx);
+  return idx;
 }
 
 pub fn notation_from_square_number(sq: u8) -> String {
