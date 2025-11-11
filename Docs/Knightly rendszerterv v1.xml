@@ -1,0 +1,287 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0" version="28.2.9">
+  <diagram name="Page-1" id="9d-IwT1pk2NoWoP7MTJv">
+    <mxGraphModel dx="1534" dy="751" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="9999" pageHeight="9999" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-1" target="IaA3IaIvg4qVMEhu7ya9-36" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-1" value="App megnyitása" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="120" y="50" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-6" target="IaA3IaIvg4qVMEhu7ya9-9" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="540" y="120" />
+              <mxPoint x="370" y="120" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-6" target="IaA3IaIvg4qVMEhu7ya9-11" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-6" target="IaA3IaIvg4qVMEhu7ya9-11" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-6" target="IaA3IaIvg4qVMEhu7ya9-11" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-6" target="IaA3IaIvg4qVMEhu7ya9-11" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-6" target="IaA3IaIvg4qVMEhu7ya9-18" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="670" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-6" target="IaA3IaIvg4qVMEhu7ya9-20" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-6" value="&lt;div&gt;főmenü&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="480" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-9" target="IaA3IaIvg4qVMEhu7ya9-23" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-9" value="Lokális játék hosztolása" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="310" y="210" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-32" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-11" target="IaA3IaIvg4qVMEhu7ya9-31" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-11" value="&lt;div&gt;Lokális játékba csatlakozni&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="460" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-18" target="4rzJeeoM2DMZDjvMm2AJ-12" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-18" value="Online jatek&lt;br&gt;(sorba allas)" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="695" y="200" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-20" target="IaA3IaIvg4qVMEhu7ya9-6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-20" target="IaA3IaIvg4qVMEhu7ya9-27" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="IaA3IaIvg4qVMEhu7ya9-20" target="IaA3IaIvg4qVMEhu7ya9-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="IaA3IaIvg4qVMEhu7ya9-20" target="iJwoCWMJ6fIoSaqHo3aH-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="IaA3IaIvg4qVMEhu7ya9-20" target="iJwoCWMJ6fIoSaqHo3aH-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="IaA3IaIvg4qVMEhu7ya9-20" target="iJwoCWMJ6fIoSaqHo3aH-7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="80" />
+              <mxPoint x="1000" y="80" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="IaA3IaIvg4qVMEhu7ya9-20" target="iJwoCWMJ6fIoSaqHo3aH-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-20" value="&lt;div&gt;Beallitasok&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="650" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-23" target="4rzJeeoM2DMZDjvMm2AJ-4" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-23" value="&lt;div&gt;Szerver peldany elinditasa&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="130" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-25" target="IaA3IaIvg4qVMEhu7ya9-29" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="IaA3IaIvg4qVMEhu7ya9-25" target="iJwoCWMJ6fIoSaqHo3aH-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-25" value="varakozas az ellenfelre" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="130" y="390" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-27" value="lokalis jatekhoz port megvaltoztatasa" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="830" y="10" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-33" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-29" target="4rzJeeoM2DMZDjvMm2AJ-32" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-29" value="&lt;div&gt;jatek elkezdése&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="400" y="850" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-34" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-31" target="IaA3IaIvg4qVMEhu7ya9-33" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-31" value="&lt;div&gt;lokalis halozaton szerver ip:port megadasa&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="460" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-33" target="IaA3IaIvg4qVMEhu7ya9-29" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-33" value="csatlakozás" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="290" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="IaA3IaIvg4qVMEhu7ya9-36" target="IaA3IaIvg4qVMEhu7ya9-6" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="IaA3IaIvg4qVMEhu7ya9-36" value="user struct letrehozasa a app-ban" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="340" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-4" target="4rzJeeoM2DMZDjvMm2AJ-7" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-4" value="hostolo kapcsolodik a szerverehez" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="130" y="230" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-7" target="IaA3IaIvg4qVMEhu7ya9-25" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-7" value="eszköz ip cím lekérése a csatlakozáshoz" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="130" y="310" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-12" target="4rzJeeoM2DMZDjvMm2AJ-20" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-12" value="&lt;div&gt;csatlakozás a központi szerverhez&lt;/div&gt;(tudjuk az ip cimet)" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="690" y="300" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-16" target="4rzJeeoM2DMZDjvMm2AJ-23" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-27" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-16" target="4rzJeeoM2DMZDjvMm2AJ-26" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-16" value="sorban állás szabad játékra várva" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="695" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-20" target="4rzJeeoM2DMZDjvMm2AJ-16" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-20" value="a szerver eltárolja az uj jatekost mint aktiv felhasznalo a listaban" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="700" y="390" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-23" value="a szerveren bekerultunk a varolistaba" style="ellipse;whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="850" y="465" width="155" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-29" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-26" target="4rzJeeoM2DMZDjvMm2AJ-28" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-26" value="&lt;div&gt;megjelent meg egy jatekos a varolistan&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="695" y="570" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-28" target="IaA3IaIvg4qVMEhu7ya9-29" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-28" value="ket jatekos ossze vonasa egy meccsbe. Kivesszuk oket a varolistabol es egy Match structba osszevonjuk oket" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="682.5" y="660" width="145" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-35" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-32" target="4rzJeeoM2DMZDjvMm2AJ-34" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-32" value="&lt;div&gt;fehér és fekete oldal eldöntése&lt;/div&gt;&lt;div&gt;(szerver által, érme dobással)&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="390" y="950" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-37" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-34" target="4rzJeeoM2DMZDjvMm2AJ-36" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-34" value="játék ui megjelenítése" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="400" y="1060" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-39" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-36" target="4rzJeeoM2DMZDjvMm2AJ-38" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-36" value="lehetséges lépések lekérése a tábla állapot alapján a szerver / engine-től" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="390" y="1160" width="140" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-38" target="4rzJeeoM2DMZDjvMm2AJ-40" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-38" value="a ui lokalisan eltarolja ezt az adot a következő körig" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="400" y="1280" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-40" target="iJwoCWMJ6fIoSaqHo3aH-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-19" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="4rzJeeoM2DMZDjvMm2AJ-40" target="iJwoCWMJ6fIoSaqHo3aH-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4rzJeeoM2DMZDjvMm2AJ-40" value="a jatekos lep a egy babual. Ekkor ellenorizzuk hogy szabad e volt ezt a léppést megtennie" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="390" y="1370" width="140" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-1" target="iJwoCWMJ6fIoSaqHo3aH-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-1" target="iJwoCWMJ6fIoSaqHo3aH-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-1" value="ha szabad volt elküldjük a lépést a szervernek" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1490" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-4" value="felbontás megváltoztatása" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="830" y="90" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-7" value="teljes képernyő" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="50" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-9" value="ai api kulcs megadása" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="140" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-11" target="iJwoCWMJ6fIoSaqHo3aH-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-11" value="&lt;div&gt;ellenfél ui frissítése&lt;/div&gt;" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1580" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-13" value="&lt;div&gt;{&lt;/div&gt;&lt;div&gt;from:str,&lt;/div&gt;&lt;div&gt;to: str&lt;/div&gt;&lt;div&gt;}&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1455" width="140" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-15" value="Ip cím megjelenítése a könnyebb csatlakozás érdekében" style="ellipse;whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="490" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-18" value="a ui végig megy az adatokon, amit visszakapott a szervertől a kör elején" style="ellipse;whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1290" width="170" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-20" target="iJwoCWMJ6fIoSaqHo3aH-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-25" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-20" target="iJwoCWMJ6fIoSaqHo3aH-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-20">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="640" y="1860" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-20" value="ellenőrizzük, hogy nyert-e a játékos vagy döntetlen lett-e" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="395" y="1670" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-22" value="a szerver megkapja a tábla állást és elküldi az enginnek ami ad egy választ" style="ellipse;whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1647.5" width="200" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-24" target="4rzJeeoM2DMZDjvMm2AJ-36">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="360" y="1820" />
+              <mxPoint x="360" y="1205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-24" value="kör átadása az ellenfélnek" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1790" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-30" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="iJwoCWMJ6fIoSaqHo3aH-28" target="iJwoCWMJ6fIoSaqHo3aH-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-28" value="játék befejezése, nyertes megjelnítése,&amp;nbsp;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="1860" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iJwoCWMJ6fIoSaqHo3aH-29" value="a játékosokat vissza küldjük a menübe, a szerver oldalon töröljük a meccset a listából, és töröljük&amp;nbsp; a játékosokat a meccs közben lévő listából" style="whiteSpace=wrap;html=1;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1940" width="160" height="120" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
