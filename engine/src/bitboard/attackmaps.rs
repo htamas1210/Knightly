@@ -46,7 +46,18 @@ pub static PAWN_ATTACK_MAP: Lazy<[[u64; 2]; 64]> = Lazy::new(|| {
 
 // KNIGHT_ATTACK_MAP[<square_index>]
 pub static KNIGHT_ATTACK_MAP: Lazy<[u64; 64]> = Lazy::new(|| {
-  let table: [u64; 64] = [0u64; 64];
+  let mut table: [u64; 64] = [0u64; 64];
+
+  for sq in 0..64 {
+    let knight: u64 = 1 << sq;
+
+    let far_left_attacks: u64 = knight << 6 | knight >> 10;
+    let near_left_attacks: u64 = knight << 15 | knight >> 17;
+    let far_right_attacks: u64 = knight << 10 | knight >> 6;
+    let near_right_attacks: u64 = knight << 17 | knight >> 15;
+
+    table[sq] = (far_left_attacks & !GH_FILE) | (far_right_attacks & !AB_FILE) | (near_left_attacks & !H_FILE) | (near_right_attacks & !A_FILE);
+  }
   return table;
 });
 
