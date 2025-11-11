@@ -1,6 +1,8 @@
 
 pub fn pop_lsb(value: &mut u64) -> usize {
-  return 0;
+  let idx = value.trailing_zeros() as usize;
+  *value &= !(1 << idx);
+  return idx;
 }
 
 pub fn pop_msb(value: &mut u64) -> usize {
