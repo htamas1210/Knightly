@@ -2,8 +2,9 @@ use eframe::egui;
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions{
         viewport: egui::ViewportBuilder::default()
-            .with_min_inner_size(egui::vec2(400.0, 400.0)) // Minimum width, height
-            .with_inner_size(egui::vec2(800.0, 600.0)), // Initial size
+            .with_fullscreen(true)
+            .with_min_inner_size(egui::vec2(800.0, 600.0)) // Minimum width, height
+            .with_inner_size(egui::vec2(1920.0, 1080.0)), // Initial size
         ..Default::default()
     };
     eframe::run_native(
@@ -71,6 +72,9 @@ enum AppState {
 }
 
 struct ChessApp {
+    fullscreen: bool,
+    resolutions: Vec<(u32, u32)>,
+    selected_resolution: usize,
     state:AppState,
     board: [[Piece; 8]; 8],
     selected: Option<(usize, usize)>,
@@ -80,6 +84,13 @@ struct ChessApp {
 impl Default for ChessApp {
     fn default() -> Self {
         Self {
+            fullscreen:true,
+            resolutions: vec![
+                (1280, 720),
+                (1600, 900),
+                (1920, 1080),
+            ],
+            selected_resolution:0,
             state:AppState::MainMenu,
             board: Self::starting_board(),
             selected: None,
