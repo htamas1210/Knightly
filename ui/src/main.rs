@@ -3,7 +3,7 @@ use eframe::egui;
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions{
         viewport: egui::ViewportBuilder::default()
-            .with_fullscreen(true)
+            .with_fullscreen(false)
             .with_min_inner_size(egui::vec2(800.0, 600.0)) // Minimum width, height
             .with_inner_size(egui::vec2(7680.0, 4320.0)), // Initial size
         ..Default::default()
@@ -81,12 +81,14 @@ struct ChessApp {
     selected: Option<(usize, usize)>,
     turn: Turn,
     pending_settings: PendingSettings,
+    server_port: String,
 }
 
 #[derive(Default)]
 struct PendingSettings {
     fullscreen: bool,
     selected_resolution: usize,
+    server_port: String,
 }
 
 impl Default for ChessApp {
@@ -106,6 +108,7 @@ impl Default for ChessApp {
             selected: None,
             turn: Turn::White,
             pending_settings: PendingSettings::default(),
+            server_port: "8080".to_string(), // Default port
         }
     }
 }
@@ -164,6 +167,7 @@ impl ChessApp {
     fn apply_settings(&mut self, ctx: &egui::Context) {
         self.fullscreen = self.pending_settings.fullscreen;
         self.selected_resolution = self.pending_settings.selected_resolution;
+        self.server_port = self.pending_settings.server_port.clone();
         
         if let Some(resolution) = self.resolutions.get(self.selected_resolution) {
             ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(
@@ -177,6 +181,7 @@ impl ChessApp {
     fn enter_settings(&mut self) {
         self.pending_settings.fullscreen = self.fullscreen;
         self.pending_settings.selected_resolution = self.selected_resolution;
+        self.pending_settings.server_port = self.server_port.clone();
         self.state = AppState::Settings;
     }
 }
@@ -243,6 +248,15 @@ impl eframe::App for ChessApp {
                                         );
                                     }
                                 });
+                        });
+                        ui.add_space(10.0);
+
+                        // Server port input field
+                        ui.horizontal(|ui| {
+                            ui.label("Local Server Port:");
+                            ui.add(egui::TextEdit::singleline(&mut self.pending_settings.server_port)
+                                .desired_width(100.0)
+                                .hint_text("8080"));
                         });
                         ui.add_space(30.0);
 
@@ -413,5 +427,12 @@ mod tests {
         let app = ChessApp::default();
         assert_eq!(app.pending_settings.fullscreen, app.fullscreen);
         assert_eq!(app.pending_settings.selected_resolution, app.selected_resolution);
+        assert_eq!(app.pending_settings.server_port, app.server_port);
+    }
+    
+    #[test]
+    fn test_server_port_default() {
+        let app = ChessApp::default();
+        assert_eq!(app.server_port, "8080");
     }
 }
