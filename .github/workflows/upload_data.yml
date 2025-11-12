@@ -20,33 +20,71 @@ jobs:
           echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > service_account.json
           
           python <<'PYCODE'
-          import gspread, json, time, subprocess
+          import gspread, json, subprocess
 
-          # credentials
           creds = json.load(open("service_account.json"))
           gc = gspread.service_account_from_dict(creds)
           sh = gc.open_by_key("${{ secrets.SPREADSHEET_ID }}")
           v = subprocess.run(['git','rev-parse','--show-toplevel'], capture_output=True).stdout.decode().strip()
           print(f"{v}/test_data.log")
 
+
+          def writeRowsToSpreadsheet(data_list, worksheet):
+              existing_rows = len(worksheet.get_all_values())
+              start_row = existing_rows + 3
+              rows_to_append = [row.split() for row in data_list]
+              print(f"{rows_to_append}")
+
+            for i, row in enumerate(rows_to_append):
+                worksheet.insert_row(row, start_row + i)
+
+
           with open(f"{v}/test_data.log", "r") as f:
               lines = [line.strip() for line in f if line.strip()]
 
+          isMaster = False
           project = lines[0].lower()
-          worksheet = sh.worksheet(project)
+          if project == "master":
+              isMaster = True
+          
+          engine_data = []
+          server_data = []
+          ui_data = []
+          master_data = []
 
-          # project name
-          data = lines[1:]
+          for entry in lines:
+              if not isMaster and entry == "engine":
+                  project = "engine"
+              elif not isMaster and entry == "server":
+                  project = "server"
+              elif not isMaster and entry == "ui":
+                  project = "ui"
 
-          #blank rows
-          existing_rows = len(worksheet.get_all_values())
-          start_row = existing_rows + 3
+              if project == "engine" and entry != "engine":
+                  engine_data.append(entry)
+              elif project == "server" and entry != "server":
+                  server_data.append(entry)
+              elif project == "ui" and entry != "ui":
+                  ui_data.append(entry)
+              elif project == "master" and entry != "master":
+                  master_data.append(entry)
 
-          # Split data into columns (by spaces)
-          rows_to_append = [row.split() for row in data]
+          print("PRINTING FILTERED DATA\n\n")
+          print(f"engine\n{engine_data}")
+          print(f"server\n{server_data}")
+          print(f"ui\n{ui_data}")
+          print("\n\n\n")
 
-          for i, row in enumerate(rows_to_append):
-              worksheet.insert_row(row, start_row + i)
+          if isMaster and len(master_data) != 0:
+              worksheet = sh.worksheet("master")
+              writeRowsToSpreadsheet(master_data, worksheet)
+              exit(0)
 
-          print(f"Uploaded {len(rows_to_append)} rows to '{project}' tab.")
+          if len(engine_data) != 0:
+              writeRowsToSpreadsheet(engine_data, sh.worksheet("engine"))
+          if len(server_data) != 0:
+              writeRowsToSpreadsheet(server_data, sh.worksheet("server"))
+          if len(ui_data) != 0:
+              writeRowsToSpreadsheet(ui_data, sh.worksheet("ui"))
+
           PYCODE
