@@ -16,7 +16,8 @@ jobs:
       server: ${{ steps.check.outputs.server }}
       ui: ${{ steps.check.outputs.ui }}
     steps:
-      - uses: actions/checkout@v4
+      - name: checkout repository 
+        uses: actions/checkout@v4
       - name: Determine which tests to run
         id: check
         run: |
