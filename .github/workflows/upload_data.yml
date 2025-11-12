@@ -33,6 +33,7 @@ jobs:
               existing_rows = len(worksheet.get_all_values())
               start_row = existing_rows + 3
               rows_to_append = [row.split() for row in data_list]
+              print("rows to append")
               print(f"{rows_to_append}")
 
               for i, row in enumerate(rows_to_append):
@@ -73,18 +74,23 @@ jobs:
           print(f"engine\n{engine_data}")
           print(f"server\n{server_data}")
           print(f"ui\n{ui_data}")
+          print(f"master\n{master_data}")
           print("\n\n\n")
 
           if isMaster and len(master_data) != 0:
+              print("uploading to master tab")
               worksheet = sh.worksheet("master")
               writeRowsToSpreadsheet(master_data, worksheet)
               exit(0)
 
           if len(engine_data) != 0:
+              print("uploading to engine tab")
               writeRowsToSpreadsheet(engine_data, sh.worksheet("engine"))
           if len(server_data) != 0:
+              print("uploading to server tab")
               writeRowsToSpreadsheet(server_data, sh.worksheet("server"))
           if len(ui_data) != 0:
+              print("uploading to ui tab")
               writeRowsToSpreadsheet(ui_data, sh.worksheet("ui"))
 
           PYCODE
