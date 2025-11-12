@@ -65,7 +65,13 @@ enum Turn {
     Black,
 }
 
+enum AppState {
+    MainMenu,
+    InGame,
+}
+
 struct ChessApp {
+    state:AppState,
     board: [[Piece; 8]; 8],
     selected: Option<(usize, usize)>,
     turn: Turn,
@@ -74,6 +80,7 @@ struct ChessApp {
 impl Default for ChessApp {
     fn default() -> Self {
         Self {
+            state:AppState::MainMenu,
             board: Self::starting_board(),
             selected: None,
             turn: Turn::White,
@@ -133,85 +140,101 @@ impl ChessApp {
     }
 }
 
-impl eframe::App for ChessApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                if ui.button("Resign").clicked() {
-                    *self = ChessApp::default();
-                }
-                
-                ui.separator();
-                ui.label(format!("Turn: {:?}", self.turn));
-            });
-        });
+    impl eframe::App for ChessApp {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        match self.state {
+            AppState::MainMenu => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading("♞ Knightly ♞");
+                        ui.add_space(30.0);
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.vertical_centered(|ui| {
-                    let available = ui.available_size();
-                    let tile = (available.x.min(available.y)) / 8.0;
-                    let board_size = tile * 8.0;
-                    ui.set_width(board_size);
-                    ui.set_min_height(board_size);
-                    let piece_label = |symbol: &str, tile: f32| {
-                        let mut job = egui::text::LayoutJob::default();
-                        job.append(
-                    symbol,
-            0.0,
-                egui::TextFormat {
-                        font_id: egui::FontId::proportional(tile * 0.75),
-                        color: egui::Color32::BLACK,
-                        ..Default::default()
-        },
-    );
-    job
-};
-
-                    egui::Grid::new("chess_grid")
-                        .spacing([0.0, 0.0])
-                        .show(ui, |ui| {
-                            for row in 0..8 {
-                                for col in 0..8 {
-                                    let piece = self.board[row][col];
-                                    let is_selected = self.selected == Some((row, col));
-                                    let color = if (row + col) % 2 == 0 {
-                                        egui::Color32::from_rgb(100, 97, 97)
-                                    } else {
-                                        egui::Color32::from_rgb(217, 217, 217)
-                                    };
-
-                                    let label = piece_label(piece.symbol(), tile);
-                                    let mut button = egui::Button::new(label)
-                                        .min_size(egui::vec2(tile, tile))
-                                        .fill(color);
-
-                                    if is_selected {
-                                        button = button.stroke(
-                                            egui::Stroke::new(2.0, egui::Color32::BLACK),
-                                        );
-                                    }
-
-                                    if ui.add(button).clicked() {
-                                        self.handle_click(row, col);
-                                    }
-                                }
-                                ui.end_row();
-                            }
-                        });
+                        if ui.add_sized([200.0, 40.0], egui::Button::new("Play")).clicked() {
+                            self.state = AppState::InGame;
+                        }
+                        ui.add_space(8.0);
+                        if ui
+                            .add_sized([200.0, 40.0], egui::Button::new("Quit"))
+                            .clicked()
+                        {
+                            std::process::exit(0);
+                        }
+                    });
                 });
-            });
-        });
+            }
+
+            AppState::InGame => {
+                // top menu bar
+                egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+                    egui::menu::bar(ui, |ui| {
+                        if ui.button("Main Menu").clicked() {
+                            self.state = AppState::MainMenu;
+                        }
+                        if ui.button("New Game").clicked() {
+                            *self = ChessApp::default();
+                            self.state = AppState::InGame;
+                        }
+                        ui.separator();
+                        ui.label(format!("Turn: {:?}", self.turn));
+                    });
+                });
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        let full_avail = ui.available_rect_before_wrap();
+                        let board_tile = (full_avail.width().min(full_avail.height())) / 8.0;
+                        let board_size = board_tile * 8.0;
+                        let board_rect =
+                            egui::Rect::from_center_size(full_avail.center(), egui::vec2(board_size, board_size));
+                        ui.allocate_ui_at_rect(board_rect, |ui| {
+                            let tile = ui.available_size().x.min(ui.available_size().y) / 8.0;
+                            egui::Grid::new("chess_grid")
+                                .spacing([0.0, 0.0])
+                                .show(ui, |ui| {
+                                    for row in 0..8 {
+                                        for col in 0..8 {
+                                            let piece = self.board[row][col];
+                                            let is_selected = self.selected == Some((row, col));
+
+                                            let color = if (row + col) % 2 == 0 {
+                                                egui::Color32::from_rgb(100, 97, 97)
+                                            } else {
+                                                egui::Color32::from_rgb(217, 217, 217)
+                                            };
+                                            let rich = egui::RichText::new(piece.symbol())
+                                                .font(egui::FontId::proportional(tile * 0.75));
+
+                                            let mut button = egui::Button::new(rich)
+                                                .min_size(egui::vec2(tile, tile))
+                                                .fill(color);
+
+                                            if is_selected {
+                                                button = button.stroke(egui::Stroke::new(
+                                                    2.0,
+                                                    egui::Color32::RED,
+                                                ));
+                                            }
+
+                                            if ui.add(button).clicked() {
+                                                self.handle_click(row, col);
+                                            }
+                                        }
+                                        ui.end_row();
+                                    }
+                                });
+                        });
+                    });
+                });
+            }
+        }
     }
-}
+    }
+
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_initial_board_setup() {
         let app = ChessApp::default();
-        
-        // Test that pieces are in correct starting positions
         assert!(matches!(app.board[0][0], Piece::Rook('b')));
         assert!(matches!(app.board[7][0], Piece::Rook('w')));
 
@@ -222,7 +245,6 @@ mod tests {
     }
     #[test]
     fn test_piece_symbols() {
-        // Test that all piece symbols return valid strings
         assert_eq!(Piece::King('w').symbol(), "♔");
         assert_eq!(Piece::King('b').symbol(), "♚");
         assert_eq!(Piece::Empty.symbol(), "");
@@ -230,14 +252,11 @@ mod tests {
     #[test]
     fn test_piece_selection() {
     let mut app = ChessApp::default();
-    
-    // Test selecting a piece, and then unselecting it
     app.handle_click(6, 0);
     assert_eq!(app.selected, Some((6, 0)));
     app.handle_click(6, 0);
     assert_eq!(app.selected, None);
 }
-
     #[test]
     fn test_piece_movement() {
     let mut app = ChessApp::default();
