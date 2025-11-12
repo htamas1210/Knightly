@@ -7,7 +7,10 @@ use tokio::sync::Mutex;
 use tokio_tungstenite::accept_async;
 use uuid::Uuid;
 
+mod broadcast_message;
 mod handle_connection;
+
+use handle_connection::handle_connection;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct MessageData {

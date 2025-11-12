@@ -1,10 +1,11 @@
-use futures_util::{SinkExt, StreamExt};
-use tokio_tungstenite::{accept_async, tungstenite::Message as WsMessage};
+use crate::ConnectionMap;
+use futures_util::StreamExt;
+use tokio_tungstenite::accept_async;
 use uuid::Uuid;
 
-use crate::ConnectionMap;
+use super::broadcast_message::broadcast_message;
 
-async fn handle_connection(stream: tokio::net::TcpStream, connections: ConnectionMap) {
+pub async fn handle_connection(stream: tokio::net::TcpStream, connections: ConnectionMap) {
     let ws_stream = accept_async(stream).await.unwrap();
     let (write, mut read) = ws_stream.split();
 
