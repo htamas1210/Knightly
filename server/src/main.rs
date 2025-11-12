@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 mod broadcast_message;
 mod handle_connection;
+mod server_event;
 
 use handle_connection::handle_connection;
 
