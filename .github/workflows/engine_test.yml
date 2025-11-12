@@ -1,7 +1,6 @@
 name: Engine Tests
 
 on:
-  pull_request:
   workflow_dispatch:
   workflow_call:
 
@@ -10,8 +9,6 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: Run Engine tests
         run: |
           bash .github/workflows/test.sh engine/

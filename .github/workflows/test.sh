@@ -30,8 +30,13 @@ echo "$PROJECT_NAME" > "$LOG_FILE"
 awk '/^running [0-9]+ test[s]?$/,/^$/' full_test_output.log >> "$LOG_FILE"
 
 # --- APPEND TO GLOBAL LOG (in repo root) ---
+if [[ $(git rev-parse --abbrev-ref HEAD) == "master" ]]; then 
+  echo "master" >> $FINAL_LOG
+fi
 cat "$LOG_FILE" >> "$FINAL_LOG"
 
 # --- SUMMARY ---
 echo ">>> Test output extracted to $PROJECT_PATH/$LOG_FILE"
 echo ">>> Appended to $FINAL_LOG"
+
+cat $(git rev-parse --show-toplevel)/test_data.log
