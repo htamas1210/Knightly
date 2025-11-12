@@ -35,8 +35,8 @@ jobs:
               rows_to_append = [row.split() for row in data_list]
               print(f"{rows_to_append}")
 
-            for i, row in enumerate(rows_to_append):
-                worksheet.insert_row(row, start_row + i)
+              for i, row in enumerate(rows_to_append):
+                  worksheet.insert_row(row, start_row + i)
 
 
           with open(f"{v}/test_data.log", "r") as f:
