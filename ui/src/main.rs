@@ -15,7 +15,7 @@ fn main() -> eframe::Result<()> {
         let mut fonts = egui::FontDefinitions::default();
         fonts.font_data.insert(
             "symbols".to_owned(),
-            egui::FontData::from_static(include_bytes!("../../fonts/DejaVuSans.ttf")).into(),
+            egui::FontData::from_static(include_bytes!("../fonts/DejaVuSans.ttf")).into(),
         );
         fonts
             .families
