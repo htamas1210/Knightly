@@ -1,93 +1,96 @@
-name: Dispatcher
+name: Upload Test Results to Google Sheets
 
 on:
-  push:
-    branches:
-      - '**'
-
-permissions:
-  contents: write
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
-  dispatch:
+  upload:
     runs-on: self-hosted
-    outputs:
-      engine: ${{ steps.check.outputs.engine }}
-      server: ${{ steps.check.outputs.server }}
-      ui: ${{ steps.check.outputs.ui }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Determine which tests to run
-        id: check
+    steps:      
+      - name: Install dependencies
         run: |
-          BRANCH="${{ github.ref_name }}"
-          echo "Branch: $BRANCH"
+          pip install gspread google-auth --break-system-packages
 
-          ENGINE=false
-          SERVER=false
-          UI=false
-
-          if [[ "$BRANCH" == *"Engine"* ]] ; then
-            ENGINE=true
-          fi
-          if [[ "$BRANCH" == *"Server"* ]] ; then
-            SERVER=true
-          fi
-          if [[ "$BRANCH" == *"UI"* ]] ; then
-            UI=true
-          fi
-
-          # Run all on master
-          if [[ "$BRANCH" == "master" ]]; then
-            ENGINE=true
-            SERVER=true
-            UI=true
-          fi
-
-          echo "engine=$ENGINE" >> $GITHUB_OUTPUT
-          echo "server=$SERVER" >> $GITHUB_OUTPUT
-          echo "ui=$UI" >> $GITHUB_OUTPUT
-
-  engine:
-    needs: dispatch
-    if: needs.dispatch.outputs.engine == 'true'
-    uses: ./.github/workflows/engine_test.yml
-    secrets: inherit
-
-  server:
-    needs: dispatch
-    if: needs.dispatch.outputs.server == 'true'
-    uses: ./.github/workflows/server_test.yml
-    secrets: inherit
-
-  ui:
-    needs: dispatch
-    if: needs.dispatch.outputs.ui == 'true'
-    uses: ./.github/workflows/ui_test.yml
-    secrets: inherit
-    
-
-  test-data-upload:
-    needs: [engine, server, ui]
-    if: always()
-    uses: ./.github/workflows/upload_data.yml
-    secrets: inherit
-
-
-  release:
-    needs: test-data-upload
-    if: github.ref == 'refs/heads/master'
-    uses: ./.github/workflows/release.yml
-    secrets: inherit
-
-  cleanup:
-    runs-on: self-hosted
-    needs: [engine, server, ui, test-data-upload, release]
-    if: always()
-    steps:
-      - name: Final cleanup
+      - name: Upload test_data.log to Google Sheets
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: |
-          echo "Final cleanup on self-hosted runner..."
-          cd "$GITHUB_WORKSPACE"
-          git clean -fdx
-          git reset --hard
+          echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > service_account.json
+          
+          python <<'PYCODE'
+          import gspread, json, subprocess
+
+          creds = json.load(open("service_account.json"))
+          gc = gspread.service_account_from_dict(creds)
+          sh = gc.open_by_key("${{ secrets.SPREADSHEET_ID }}")
+          v = subprocess.run(['git','rev-parse','--show-toplevel'], capture_output=True).stdout.decode().strip()
+          print(f"{v}/test_data.log")
+
+
+          def writeRowsToSpreadsheet(data_list, worksheet):
+              existing_rows = len(worksheet.get_all_values())
+              start_row = existing_rows + 3
+              rows_to_append = [row.split() for row in data_list]
+              print("rows to append")
+              print(f"{rows_to_append}")
+
+              for i, row in enumerate(rows_to_append):
+                  worksheet.insert_row(row, start_row + i)
+
+
+          with open(f"{v}/test_data.log", "r") as f:
+              lines = [line.strip() for line in f if line.strip()]
+
+          isMaster = False
+          project = lines[0].lower()
+          if project == "master":
+              isMaster = True
+          
+          engine_data = []
+          server_data = []
+          ui_data = []
+          master_data = []
+
+          for entry in lines:
+              if not isMaster and entry == "engine":
+                  project = "engine"
+              elif not isMaster and entry == "server":
+                  project = "server"
+              elif not isMaster and entry == "ui":
+                  project = "ui"
+
+              if project == "engine" and entry != "engine":
+                  engine_data.append(entry)
+              elif project == "server" and entry != "server":
+                  server_data.append(entry)
+              elif project == "ui" and entry != "ui":
+                  ui_data.append(entry)
+              elif project == "master" and entry != "master":
+                  master_data.append(entry)
+
+          print("PRINTING FILTERED DATA\n\n")
+          print(f"engine\n{engine_data}")
+          print(f"server\n{server_data}")
+          print(f"ui\n{ui_data}")
+          print(f"master\n{master_data}")
+          print("\n\n\n")
+
+          if isMaster and len(master_data) != 0:
+              print("uploading to master tab")
+              worksheet = sh.worksheet("master")
+              writeRowsToSpreadsheet(master_data, worksheet)
+              exit(0)
+
+          if len(engine_data) != 0:
+              print("uploading to engine tab")
+              writeRowsToSpreadsheet(engine_data, sh.worksheet("engine"))
+          if len(server_data) != 0:
+              print("uploading to server tab")
+              writeRowsToSpreadsheet(server_data, sh.worksheet("server"))
+          if len(ui_data) != 0:
+              print("uploading to ui tab")
+              writeRowsToSpreadsheet(ui_data, sh.worksheet("ui"))
+
+          PYCODE
