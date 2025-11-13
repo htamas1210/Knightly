@@ -9,8 +9,6 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: Run Server tests
         run: |
           bash .github/workflows/test.sh server/
