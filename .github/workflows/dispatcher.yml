@@ -16,6 +16,7 @@ jobs:
       server: ${{ steps.check.outputs.server }}
       ui: ${{ steps.check.outputs.ui }}
     steps:
+      - uses: actions/checkout@v4
       - name: Determine which tests to run
         id: check
         run: |
@@ -90,6 +91,3 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           git clean -fdx
           git reset --hard
-
-
-
