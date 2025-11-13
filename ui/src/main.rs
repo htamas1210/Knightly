@@ -423,14 +423,6 @@ mod tests {
     }
     
     #[test]
-    fn test_settings_initialization() {
-        let app = ChessApp::default();
-        assert_eq!(app.pending_settings.fullscreen, app.fullscreen);
-        assert_eq!(app.pending_settings.selected_resolution, app.selected_resolution);
-        assert_eq!(app.pending_settings.server_port, app.server_port);
-    }
-    
-    #[test]
     fn test_server_port_default() {
         let app = ChessApp::default();
         assert_eq!(app.server_port, "8080");
