@@ -38,3 +38,5 @@ cat "$LOG_FILE" >> "$FINAL_LOG"
 # --- SUMMARY ---
 echo ">>> Test output extracted to $PROJECT_PATH/$LOG_FILE"
 echo ">>> Appended to $FINAL_LOG"
+
+cat $(git rev-parse --show-toplevel)/test_data.log
