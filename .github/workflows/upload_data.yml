@@ -1,52 +1,93 @@
-name: Upload Test Results to Google Sheets
+name: Dispatcher
 
 on:
-  workflow_dispatch:
-  workflow_call:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: write
 
 jobs:
-  upload:
+  dispatch:
     runs-on: self-hosted
-    steps:      
-      - name: Install dependencies
+    outputs:
+      engine: ${{ steps.check.outputs.engine }}
+      server: ${{ steps.check.outputs.server }}
+      ui: ${{ steps.check.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Determine which tests to run
+        id: check
         run: |
-          pip install gspread google-auth --break-system-packages
+          BRANCH="${{ github.ref_name }}"
+          echo "Branch: $BRANCH"
 
-      - name: Upload test_data.log to Google Sheets
-        env:
-          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          ENGINE=false
+          SERVER=false
+          UI=false
+
+          if [[ "$BRANCH" == *"Engine"* ]] ; then
+            ENGINE=true
+          fi
+          if [[ "$BRANCH" == *"Server"* ]] ; then
+            SERVER=true
+          fi
+          if [[ "$BRANCH" == *"UI"* ]] ; then
+            UI=true
+          fi
+
+          # Run all on master
+          if [[ "$BRANCH" == "master" ]]; then
+            ENGINE=true
+            SERVER=true
+            UI=true
+          fi
+
+          echo "engine=$ENGINE" >> $GITHUB_OUTPUT
+          echo "server=$SERVER" >> $GITHUB_OUTPUT
+          echo "ui=$UI" >> $GITHUB_OUTPUT
+
+  engine:
+    needs: dispatch
+    if: needs.dispatch.outputs.engine == 'true'
+    uses: ./.github/workflows/engine_test.yml
+    secrets: inherit
+
+  server:
+    needs: dispatch
+    if: needs.dispatch.outputs.server == 'true'
+    uses: ./.github/workflows/server_test.yml
+    secrets: inherit
+
+  ui:
+    needs: dispatch
+    if: needs.dispatch.outputs.ui == 'true'
+    uses: ./.github/workflows/ui_test.yml
+    secrets: inherit
+    
+
+  test-data-upload:
+    needs: [engine, server, ui]
+    if: always()
+    uses: ./.github/workflows/upload_data.yml
+    secrets: inherit
+
+
+  release:
+    needs: test-data-upload
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+
+  cleanup:
+    runs-on: self-hosted
+    needs: [engine, server, ui, test-data-upload, release]
+    if: always()
+    steps:
+      - name: Final cleanup
         run: |
-          echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > service_account.json
-          
-          python <<'PYCODE'
-          import gspread, json, time, subprocess
-
-          # credentials
-          creds = json.load(open("service_account.json"))
-          gc = gspread.service_account_from_dict(creds)
-          sh = gc.open_by_key("${{ secrets.SPREADSHEET_ID }}")
-          v = subprocess.run(['git','rev-parse','--show-toplevel'], capture_output=True).stdout.decode().strip()
-          print(f"{v}/test_data.log")
-
-          with open(f"{v}/test_data.log", "r") as f:
-              lines = [line.strip() for line in f if line.strip()]
-
-          project = lines[0].lower()
-          worksheet = sh.worksheet(project)
-
-          # project name
-          data = lines[1:]
-
-          #blank rows
-          existing_rows = len(worksheet.get_all_values())
-          start_row = existing_rows + 3
-
-          # Split data into columns (by spaces)
-          rows_to_append = [row.split() for row in data]
-
-          for i, row in enumerate(rows_to_append):
-              worksheet.insert_row(row, start_row + i)
-
-          print(f"Uploaded {len(rows_to_append)} rows to '{project}' tab.")
-          PYCODE
+          echo "Final cleanup on self-hosted runner..."
+          cd "$GITHUB_WORKSPACE"
+          git clean -fdx
+          git reset --hard
