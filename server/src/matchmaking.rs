@@ -110,3 +110,93 @@ impl MatchmakingSystem {
         println!("Match created: {} (white) vs {} (black)", white, black);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::events::EventSystem;
+    use uuid::Uuid;
+
+    use crate::connection::new_connection_map;
+    use crate::connection::new_match_map;
+    use crate::connection::new_waiting_queue;
+
+    #[tokio::test]
+    async fn test_matchmaking_creates_matches() {
+        let connections = new_connection_map();
+        let matches = new_match_map();
+        let waiting_queue = new_waiting_queue();
+        let event_system = EventSystem::new();
+
+        let matchmaking = MatchmakingSystem::new(
+            connections.clone(),
+            matches.clone(),
+            waiting_queue.clone(),
+            event_system.clone(),
+        );
+
+        let player1 = Uuid::new_v4();
+        let player2 = Uuid::new_v4();
+
+        {
+            waiting_queue.lock().await.push_back(player1);
+            waiting_queue.lock().await.push_back(player2);
+        }
+
+        matchmaking.try_create_match().await;
+
+        {
+            let matches_map = matches.lock().await;
+            assert_eq!(matches_map.len(), 1, "Should create one match");
+
+            let game_match = matches_map.values().next().unwrap();
+            assert!(game_match.player_white == player1 || game_match.player_white == player2);
+            assert!(game_match.player_black == player1 || game_match.player_black == player2);
+            assert_ne!(
+                game_match.player_white, game_match.player_black,
+                "Players should be different"
+            );
+        }
+
+        {
+            let queue = waiting_queue.lock().await;
+            assert!(
+                queue.is_empty(),
+                "Waiting queue should be empty after matchmaking"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_matchmaking_with_odd_players() {
+        let connections = new_connection_map();
+        let matches = new_match_map();
+        let waiting_queue = new_waiting_queue();
+        let event_system = EventSystem::new();
+
+        let matchmaking = MatchmakingSystem::new(
+            connections.clone(),
+            matches.clone(),
+            waiting_queue.clone(),
+            event_system.clone(),
+        );
+
+        let player1 = Uuid::new_v4();
+        {
+            waiting_queue.lock().await.push_back(player1);
+        }
+
+        matchmaking.try_create_match().await;
+
+        {
+            let matches_map = matches.lock().await;
+            assert!(
+                matches_map.is_empty(),
+                "Should not create match with only one player"
+            );
+
+            let queue = waiting_queue.lock().await;
+            assert_eq!(queue.len(), 1, "Should keep single player in queue");
+        }
+    }
+}

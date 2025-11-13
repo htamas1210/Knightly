@@ -1,7 +1,6 @@
 mod connection;
 mod events;
 mod matchmaking;
-
 use tokio::net::TcpListener;
 
 #[tokio::main]

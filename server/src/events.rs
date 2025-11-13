@@ -75,3 +75,52 @@ impl Default for EventSystem {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[tokio::test]
+    async fn test_event_system_send_and_receive() {
+        let event_system = EventSystem::new();
+        let player_id = Uuid::new_v4();
+
+        let join_event = ClientEvent::Join {
+            username: "test_user".to_string(),
+        };
+
+        let send_result = event_system.send_event(player_id, join_event).await;
+        assert!(send_result.is_ok(), "Should send event successfully");
+
+        let received = event_system.next_event().await;
+        assert!(received.is_some(), "Should receive sent event");
+
+        let (received_id, received_event) = received.unwrap();
+        assert_eq!(received_id, player_id, "Should receive correct player ID");
+
+        match received_event {
+            ClientEvent::Join { username } => {
+                assert_eq!(username, "test_user", "Should receive correct username");
+            }
+            _ => panic!("Should receive Join event"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_event_system_clone() {
+        let event_system1 = EventSystem::new();
+        let event_system2 = event_system1.clone();
+
+        let player_id = Uuid::new_v4();
+        let event = ClientEvent::FindMatch;
+
+        event_system1.send_event(player_id, event).await.unwrap();
+
+        let received = event_system2.next_event().await;
+        assert!(
+            received.is_some(),
+            "Cloned event system should receive events"
+        );
+    }
+}

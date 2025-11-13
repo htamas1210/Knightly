@@ -167,3 +167,52 @@ async fn cleanup_player(
 
     println!("Cleaned up player {}", player_id);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[tokio::test]
+    async fn test_send_message_to_nonexistent_player() {
+        let connections = new_connection_map();
+        let player_id = Uuid::new_v4();
+
+        let result = send_message_to_player(&connections, player_id, "test message").await;
+        assert!(result.is_ok(), "Should handle missing player gracefully");
+    }
+
+    #[tokio::test]
+    async fn test_broadcast_to_empty_connections() {
+        let connections = new_connection_map();
+
+        broadcast_to_all(&connections, "test broadcast").await;
+
+        let conn_map = connections.lock().await;
+        assert!(conn_map.is_empty(), "Connections should still be empty");
+    }
+
+    #[tokio::test]
+    async fn test_connection_cleanup() {
+        let connections = new_connection_map();
+        let matches = new_match_map();
+        let waiting_queue = new_waiting_queue();
+
+        let player_id = Uuid::new_v4();
+
+        {
+            waiting_queue.lock().await.push_back(player_id);
+            assert_eq!(waiting_queue.lock().await.len(), 1);
+        }
+
+        cleanup_player(player_id, &connections, &matches, &waiting_queue).await;
+
+        {
+            let queue = waiting_queue.lock().await;
+            assert!(
+                !queue.contains(&player_id),
+                "Player should be removed from waiting queue"
+            );
+        }
+    }
+}
