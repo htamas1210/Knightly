@@ -1,4 +1,5 @@
 use super::board::Board;
+use super::attackmaps::*;
 
 impl Board {
 
@@ -25,5 +26,9 @@ impl Board {
     }
 
     return move_mask;
+  }
+  #[inline]
+  pub fn get_pseudo_knight_moves(&self, sq: u32) -> u64 {
+    return KNIGHT_ATTACK_MAP[sq as usize];
   }
 }
