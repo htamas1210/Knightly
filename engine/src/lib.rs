@@ -1,2 +1,3 @@
 mod bitboard;
-mod chessmove;
+pub mod chessmove;
+pub mod piecetype;
