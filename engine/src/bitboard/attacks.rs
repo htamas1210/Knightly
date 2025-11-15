@@ -43,7 +43,19 @@ impl Board {
   pub fn get_pseudo_opponent_pawn_captures(&self, sq: u32) -> u64 {
     return PAWN_ATTACK_MAP[sq as usize][1 - self.side_to_move as usize];
   }
+  #[inline]
+  pub fn get_pseudo_bishop_moves(&self, sq: u32) -> u64 {
+    let mut  moves = 0u64;
+    let sq  = sq as usize;
+    let occupancy = self.occupancy[2];
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 1);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 3);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 5);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 7);
 
+    return moves;
+  }
+  
 }
 
 #[inline(always)]
