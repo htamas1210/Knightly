@@ -67,6 +67,10 @@ impl Board {
 
     return moves;
   }
+  #[inline(always)]
+  pub fn get_pseudo_queen_moves(&self, sq: u32) -> u64 {
+    return self.get_pseudo_bishop_moves(sq) | self.get_pseudo_rook_moves(sq);
+  }
 }
 
 #[inline(always)]
