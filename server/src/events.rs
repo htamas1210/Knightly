@@ -26,10 +26,10 @@ pub enum ClientEvent {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventResponse {
-    pub response: Result<bool, String>,
+    pub response: Result<(), String>,
 }
 
-pub struct EventSystem {
+/*pub struct EventSystem {
     sender: mpsc::UnboundedSender<(Uuid, EventResponse)>,
     receiver: Arc<Mutex<mpsc::UnboundedReceiver<(Uuid, EventResponse)>>>,
 }
@@ -59,12 +59,13 @@ impl EventSystem {
         connections: &ConnectionMap,
     ) -> Result<(), Box<dyn std::error::Error>> {
         //self.sender.send((player_id, event))?;
-
+        println!("Hellodsjaoidsaid");
         crate::connection::send_message_to_player(
             &connections,
             player_id,
             &serde_json::to_string(&event).unwrap(),
-        );
+        )
+        .await;
 
         Ok(())
     }
@@ -81,7 +82,6 @@ impl Default for EventSystem {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;

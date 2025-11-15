@@ -104,7 +104,7 @@ pub async fn handle_connection(
     connections: ConnectionMap,
     matches: MatchMap,
     waiting_queue: WaitingQueue,
-    event_system: crate::events::EventSystem,
+    //event_system: crate::events::EventSystem,
 ) -> anyhow::Result<()> {
     use tokio_tungstenite::accept_async;
 
@@ -152,18 +152,19 @@ pub async fn handle_connection(
                 Join { username } => {
                     {
                         let mut conn_map = connections.lock().await;
-                        let mut player = conn_map.get_mut(&player_id).unwrap();
+                        let player = conn_map.get_mut(&player_id).unwrap();
                         player.username = Some(username);
                     }
 
                     //respone to client
                     let response: EventResponse = EventResponse {
-                        response: core::result::Result::Ok(true),
+                        response: core::result::Result::Ok(()),
                     };
 
                     println!("response: {:?}", response);
 
-                    send_message_to_player(
+                    //event_system.send_event(player_id, &response, &connections);
+                    let _ = send_message_to_player(
                         &connections,
                         player_id,
                         &serde_json::to_string(&response).unwrap(),
