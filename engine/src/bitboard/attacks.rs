@@ -31,4 +31,9 @@ impl Board {
   pub fn get_pseudo_knight_moves(&self, sq: u32) -> u64 {
     return KNIGHT_ATTACK_MAP[sq as usize];
   }
+  #[inline]
+  pub fn get_pseudo_king_moves(&self, sq: u32) -> u64 {
+    return KING_ATTACK_MAP[sq as usize];
+  }
+
 }
