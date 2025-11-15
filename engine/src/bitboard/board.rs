@@ -53,6 +53,38 @@ impl Board {
     return bit_board;
   }
 
+  #[inline(always)]
+  pub fn bitboards(&self, index: usize) -> u64 {
+    return self.bitboards[index];
+  }
+  #[inline(always)]
+  pub fn piece_board(&self, sq: u8) -> u8 {
+    return self.piece_board[sq as usize];
+  }
+  #[inline(always)]
+  pub fn occupancy(&self, side: usize) -> u64 {
+    return self.occupancy[side];
+  }
+  #[inline(always)]
+  pub fn castling_rights(&self) -> u8 {
+    return self.castling_rights;
+  }
+  #[inline(always)]
+  pub fn pinned_squares(&self, sq: usize) -> u8 {
+    return self.pinned_squares[sq];
+  }
+  #[inline(always)]
+  pub fn pin_mask(&self) -> u64 {
+    return self.pin_mask;
+  }
+  #[inline(always)]
+  pub fn en_passant_square(&self) -> u64 {
+    return self.en_passant_square;
+  }
+  #[inline(always)]
+  pub fn side_to_move(&self) -> u8 {
+    return self.side_to_move;
+  }
 
 
   fn calc_occupancy(&mut self) {
