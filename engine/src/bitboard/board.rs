@@ -86,6 +86,10 @@ impl Board {
     return self.side_to_move;
   }
 
+  #[inline(always)]
+  pub fn current_king_square(&self) -> u32 {
+    return if self.side_to_move == 0 { self.bitboards[5].trailing_zeros() } else { self.bitboards[11].trailing_zeros() };
+  }
 
   fn calc_occupancy(&mut self) {
     self.occupancy = [0u64; 3];
