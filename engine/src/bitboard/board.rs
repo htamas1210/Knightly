@@ -50,4 +50,26 @@ impl Board {
     return bit_board;
   }
 
+
+
+  fn calc_occupancy(&mut self) {
+    self.occupancy = [0u64; 3];
+    for b in 0..6 {
+      self.occupancy[0] |= self.bitboards[b];
+    }
+    for b in 6..12 {
+      self.occupancy[1] |= self.bitboards[b];
+    }
+    self.occupancy[2] = self.occupancy[0] | self.occupancy[1];
+  }
+  fn calc_piece_board(&mut self) {
+    for sq in 0..64 {
+      for b in 0..12 {
+        if (self.bitboards[b as usize] & 1 << sq) != 0 {
+          self.piece_board[sq] = b;
+        }
+      }
+    }
+  }
+
 }
