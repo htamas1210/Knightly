@@ -140,3 +140,86 @@ Az alábbiak a tervezett, szabványosított JSON üzenettípusok. Nem pszeudokó
 6. **Validálás:** szerver lekéri a félellenőrzést az engine-től (vagy saját szabályellenőrzés), ha valid → update `fen`, append `move_history`, küld `move_result` és `opponent_move` a másik félnek.
 7. **Végállapot:** ha matt/döntetlen/timeout → szerver `game_end` és törli match-t, kerül a statisztikákba.
 8. **Utak a menübe:** a játékosokat visszairányítjuk a főmenübe, match eltávolítva.
+
+---
+
+## 7. Engine integráció és validáció
+- **Ajánlott integráció:** a chess engine legyen Rust crate, amelyet a szerver hív pontos függvényekkel — így egyszerű és gyors. Ha nem lehetséges, használjunk helyi folyamatot (`stdin/stdout`), vagy IPC (Unix domain socket).
+- **Funkciók az engine-ben:** validálás (`is_move_legal`), lépések generálása (`generate_moves`), FEN kezelése, játék vége ellenőrzése.
+- **SLA/Timeout:** minden engine kéréshez legyen timeout (pl. 2s). Ha az engine nem válaszol → szerver fallback: elutasítja a lépést vagy elfogadja lokálisan, attól függően.
+
+---
+
+## 8. UI–Server–Engine adatáramlás
+- **Kliens → Szerver:** JSON üzenetek (lásd 4. rész).
+- **Szerver → Engine:** függvényhívás vagy IPC hívás a board állás kapcsán.
+- **Engine → Szerver:** válasz: legális/illegális, lehetséges lépések, új FEN.
+- **Szerver → Kliens(ek):** a véglegesített, validált lépést, valamint állapot- és hibainformációkat.
+
+---
+
+## 9. Hálózat, üzemeltetés és deployment
+- **Port:** alap WebSocket port (például `9001` vagy `8080`).
+- **Bind cím:** `0.0.0.0` (LAN- és DDNS-elérést is lehetővé téve), dev környezetben `127.0.0.1` is használható.
+- **Domain/DDNS:** a szerver elérhetővá tehető DDNS-en keresztül (pl. `mychess.ddns.net:9001`).
+- **TLS:** ha publikus elérés szükséges, használj `wss://` TLS-t — pl. reverse proxy (nginx) terminálja a TLS-t és belsőleg csatlakozik `ws://`-on.
+- **Self-hosted runner & CI:** a fejlesztői runner lehet persistens; minden workflow végén takarítás javasolt. Artefaktok feltöltése (logok) az Action-ökben.
+
+---
+
+## 10. Biztonság és jogosultságok
+- **Input validáció:** a szerver soha ne bízzon a kliensben — minden lépést validálni kell az engine-nel.
+- **Rate limiting:** egyszerű védelem (per IP/játékos) botok ellen.
+- **TLS:** javasolt publikus hosztingnál.
+- **Auth:** kezdetben opcionális, később token/username+password vagy OAuth implementálása.
+
+---
+
+## 11. Naplózás, hibakezelés és monitoring
+- **Naplózási szint:** `info` alap, `debug` fejlesztéshez.
+- **Naplófájlok:** per-meccs és per-játékos események — eseményeket timeframe-ekkel rögzíteni.
+- **Error handling:** minden külső hívás (engine, disk, network) timeout-tal és visszapattanó logikával kezelve legyen.
+- **Monitoring:** egyszerű health endpoint (HTTP) és process monitoring (systemd, Prometheus exporter később).
+
+---
+
+## 12. Tesztelés és CI/CD integráció
+- **Unit tesztek:** rule engine, move validation, matchmaker logic.
+- **Integration tesztek:** szerver–kliens kommunikáció; mock engine használata.
+- **CI:** GitHub Actions — teszt workflow-ok per-projekt (Engine/Server/UI). Rendszertervben előírt log exportálás a Google Sheets-be lehetőség.
+
+---
+
+## 13. Üzemeltetési kézikönyv (runbook)
+- **Indítás:** `cargo run --release` vagy systemd service. Ajánlott: service fájl, ami a runner felhasználó alatt fut.
+- **Stop:** graceful shutdown jelzés a futó meccsek befejezésére (vagy mentés után stop).
+- **Frissítés:** stop → pull → `cargo build --release` → restart.
+- **Hiba esetén:** ellenőrizd a naplókat, engine elérhetőségét, hálózati port forwardokat.
+
+---
+
+## 14. Fejlesztési roadmap és ajánlott következő lépések
+1. Alap WebSocket server implementáció és egyszerű client teszt (lokálisan).  
+2. Shared message schema (JSON) és basic `Join/FindMatch/Move` támogatás.  
+3. Matchmaker + in-memory match tárolás.  
+4. Engine integráció (egy egyszerű lib vagy local process).  
+5. Reconnect és állapot-szinkronizáció (sync_state).  
+6. TLS és reverse proxy beállítása (ha publikus).  
+7. Perzisztencia (match history, eredmények).  
+8. Skálázás (ha szükséges: több match host, load balancing, stateless match managers).
+
+---
+
+## 15. Mellékletek — fontos konfigurációk
+- **Environment változók**
+  - `SERVER_BIND=0.0.0.0:9001`
+  - `LOG_LEVEL=info`
+  - `ENGINE_PATH=/opt/knightly/engine` (ha külön process)
+- **Ajánlott crate-ek**: `tokio`, `tokio-tungstenite`, `serde`, `serde_json`, `uuid`, `tracing`.
+
+---
+
+## Záró megjegyzés
+Ez a dokumentum a diagram és a megbeszélések alapján készült. A terv elég részletes ahhoz, hogy a szerver fejlesztését megkezdjétek: tartalmazza az üzenetsémákat, a matchmaking logikát, az engine integrációs lehetőségeket és az üzemeltetési követelményeket.
+
+Ha szeretnéd, legközelebb tudok készíteni belőle egy rövidebb fejlesztői checklistát (sprint backlog), vagy generálhatok egy külön implementációs tervet (fájlok/funkciók szerinti bontás).
