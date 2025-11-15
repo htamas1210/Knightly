@@ -1,3 +1,5 @@
+use super::utils::try_get_square_number_from_notation;
+
 pub struct Board {
   pub(in super) bitboards: [u64; 12],     // 0-5 -> white pieces (P, N, B, R, Q, K), 6-11 -> black pieces (p, n, b, r, q, k)
   pub(in super) piece_board: [u8; 64],    // same as board indexes, 12 -> empty square
@@ -51,6 +53,72 @@ impl Board {
     bit_board.calc_piece_board();
 
     return bit_board;
+  }
+  pub fn build(fen: &str) -> Self {
+    let mut board: Board = Board::new_clear();
+
+    let mut col: i32 = 0;
+    let mut row: i32 = 7;
+    let pieces: [char; 12] = ['p', 'n', 'b', 'r', 'q', 'k', 'P', 'N', 'B', 'R', 'Q', 'K'];
+    let mut coming_up: &str = fen;
+
+    for (i, c) in coming_up.chars().enumerate() {
+      if pieces.contains(&c) {
+        // board.place_piece(row*8 + col, c);
+        col += 1;
+      }
+      else if ('1'..='8').contains(&c) {
+        col += c.to_string().parse::<i32>().unwrap();
+      }
+      else if c == '/' {
+        row -= 1;
+        col = 0;
+      }
+      else {
+        coming_up = &coming_up[i+1..];
+        break;
+      }
+    }
+    board.calc_occupancy();
+    
+    match coming_up.chars().next().unwrap() {
+      'w' => board.side_to_move = 0,
+      'b' => board.side_to_move = 1,
+       _  => panic!("invalid fen notation / to be handled later")
+    }
+    coming_up = &coming_up[2..];
+
+    for (i, c) in coming_up.chars().enumerate() {
+      match c {
+        'K' => board.castling_rights |= 1 << 3,
+        'Q' => board.castling_rights |= 1 << 2,
+        'k' => board.castling_rights |= 1 << 1,
+        'q' => board.castling_rights |= 1,
+        '-' => {
+          coming_up = &coming_up[i+2..];
+          break;
+        }
+         _  => {
+          coming_up = &coming_up[i+1..];
+          break;
+        }
+      }
+    }
+    match coming_up.chars().next().unwrap() {
+      '-' => {
+          coming_up = &coming_up[1..];
+        }
+       _  => {
+          let notation = coming_up.split(' ').next().unwrap();
+          if let Ok(epsq_index) = try_get_square_number_from_notation(notation) {
+            board.en_passant_square = 1 << epsq_index;
+          }
+       }
+    }
+    // board.calc_pinned_squares();
+    board.calc_piece_board();
+
+    return board;
   }
 
   #[inline(always)]
