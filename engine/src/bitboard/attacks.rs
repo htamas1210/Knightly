@@ -55,7 +55,18 @@ impl Board {
 
     return moves;
   }
-  
+  #[inline]
+  pub fn get_pseudo_rook_moves(&self, sq: u32) -> u64 {
+    let mut moves: u64 = 0u64;
+    let occupancy = self.occupancy[2];
+    let sq = sq as usize;
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 0);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 2);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 4);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 6);
+
+    return moves;
+  }
 }
 
 #[inline(always)]
