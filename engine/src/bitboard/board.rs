@@ -25,4 +25,29 @@ impl Board {
 
     return bit_board;
   }
+  pub fn new() -> Self {
+    let mut bit_board: Board = Self {
+      bitboards: [0x0000_0000_0000_FF00,
+                0x0000_0000_0000_0042,
+                0x0000_0000_0000_0024,
+                0x0000_0000_0000_0081,
+                0x0000_0000_0000_0008,
+                0x0000_0000_0000_0010,
+                0x00FF_0000_0000_0000,
+                0x4200_0000_0000_0000,
+                0x2400_0000_0000_0000,
+                0x8100_0000_0000_0000,
+                0x0800_0000_0000_0000,
+                0x1000_0000_0000_0000],
+      piece_board: [12; 64],
+      occupancy: [0; 3],
+      castling_rights: 0b0000_1111,
+      pinned_squares: [4; 64],
+      pin_mask: 0u64,
+      en_passant_square: 0x0000_0000_0000_0000,
+      side_to_move: 0
+    };
+    return bit_board;
+  }
+
 }
