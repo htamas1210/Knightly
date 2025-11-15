@@ -1,3 +1,5 @@
+use crate::events::ClientEvent::*;
+use crate::events::{ClientEvent, EventResponse};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -141,8 +143,35 @@ pub async fn handle_connection(
             let text = message.to_text()?;
             println!("Received from {}: {}", player_id, text);
 
-            // TODO: Parse and handle message with event system
-            // This will be implemented when we integrate the event system
+            let client_data: ClientEvent = serde_json::from_str(text)
+                .expect("Failed to convert data into json at handle_connection");
+
+            println!("client: {:?}", client_data);
+
+            match client_data {
+                Join { username } => {
+                    {
+                        let mut conn_map = connections.lock().await;
+                        let mut player = conn_map.get_mut(&player_id).unwrap();
+                        player.username = Some(username);
+                    }
+
+                    //respone to client
+                    let response: EventResponse = EventResponse {
+                        response: core::result::Result::Ok(true),
+                    };
+
+                    println!("response: {:?}", response);
+
+                    send_message_to_player(
+                        &connections,
+                        player_id,
+                        &serde_json::to_string(&response).unwrap(),
+                    )
+                    .await;
+                }
+                _ => {}
+            }
         }
     }
 

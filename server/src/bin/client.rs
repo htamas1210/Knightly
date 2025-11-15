@@ -67,22 +67,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         println!("Welcome! Your player ID: {}", player_id);
                                     }
                                 }
-                                "match_found" => {
-                                    if let (Some(opponent), Some(color), Some(match_id)) =
-                                        (parsed.opponent, parsed.color, parsed.match_id)
-                                    {
-                                        println!(
-                                            "Match found! Opponent: {}, Color: {}, Match ID: {}",
-                                            opponent, color, match_id
-                                        );
-                                    }
+                                _ => {
+                                    println!("cucc: {:?}", parsed);
                                 }
-                                "error" => {
-                                    if let Some(reason) = parsed.reason {
-                                        println!("Error: {}", reason);
-                                    }
-                                }
-                                _ => {}
                             }
                         }
                     }

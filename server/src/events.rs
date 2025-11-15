@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 use uuid::Uuid;
+
+use crate::connection::ConnectionMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Step {
@@ -23,7 +26,7 @@ pub enum ClientEvent {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventResponse {
-    response: Result<bool, String>,
+    pub response: Result<bool, String>,
 }
 
 pub struct EventSystem {
@@ -52,9 +55,17 @@ impl EventSystem {
     pub async fn send_event(
         &self,
         player_id: Uuid,
-        event: EventResponse,
+        event: &EventResponse,
+        connections: &ConnectionMap,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.sender.send((player_id, event))?;
+        //self.sender.send((player_id, event))?;
+
+        crate::connection::send_message_to_player(
+            &connections,
+            player_id,
+            &serde_json::to_string(&event).unwrap(),
+        );
+
         Ok(())
     }
 
