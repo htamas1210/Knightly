@@ -1,5 +1,4 @@
-use crate::events::ClientEvent::*;
-use crate::events::{ClientEvent, EventResponse};
+use crate::connection::ClientEvent::*;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -28,6 +27,28 @@ pub fn new_waiting_queue() -> WaitingQueue {
     Arc::new(Mutex::new(VecDeque::new()))
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Step {
+    pub from: String,
+    pub to: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+enum ClientEvent {
+    Join { username: String },
+    FindMatch,
+    Move { from: String, to: String },
+    Resign,
+    Chat { text: String },
+    RequestLegalMoves { fen: String },
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EventResponse {
+    pub response: Result<(), String>,
+}
+
 #[derive(Debug)]
 pub struct PlayerConnection {
     pub id: Uuid,
@@ -43,12 +64,6 @@ pub struct GameMatch {
     pub player_black: Uuid,
     pub board_state: String,
     pub move_history: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Step {
-    pub from: String,
-    pub to: String,
 }
 
 // Message sending utilities
@@ -104,7 +119,6 @@ pub async fn handle_connection(
     connections: ConnectionMap,
     matches: MatchMap,
     waiting_queue: WaitingQueue,
-    //event_system: crate::events::EventSystem,
 ) -> anyhow::Result<()> {
     use tokio_tungstenite::accept_async;
 
@@ -163,7 +177,6 @@ pub async fn handle_connection(
 
                     println!("response: {:?}", response);
 
-                    //event_system.send_event(player_id, &response, &connections);
                     let _ = send_message_to_player(
                         &connections,
                         player_id,
