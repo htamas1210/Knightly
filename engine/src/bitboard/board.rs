@@ -115,7 +115,7 @@ impl Board {
           }
        }
     }
-    // board.calc_pinned_squares();
+    board.calc_pinned_squares();
     board.calc_piece_board();
 
     return board;
