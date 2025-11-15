@@ -47,6 +47,9 @@ impl Board {
       en_passant_square: 0x0000_0000_0000_0000,
       side_to_move: 0
     };
+    bit_board.calc_occupancy();
+    bit_board.calc_piece_board();
+
     return bit_board;
   }
 
