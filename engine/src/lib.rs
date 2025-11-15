@@ -3,6 +3,7 @@ pub mod chessmove;
 pub mod piecetype;
 pub mod boardsquare;
 pub mod movetype;
+pub mod gameend;
 
 use chessmove::ChessMove;
 
