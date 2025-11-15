@@ -3,7 +3,7 @@ use eframe::egui;
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions{
         viewport: egui::ViewportBuilder::default()
-            .with_fullscreen(false)
+            .with_fullscreen(true)
             .with_min_inner_size(egui::vec2(800.0, 600.0)) // Minimum width, height
             .with_inner_size(egui::vec2(7680.0, 4320.0)), // Initial size
         ..Default::default()
@@ -101,6 +101,7 @@ impl Default for ChessApp {
                 (1920, 1080),
                 (2560, 1440),
                 (3840, 2160),
+                (7680, 4320),
             ],
             selected_resolution: 2, // Default to 1920x1080
             state: AppState::MainMenu,
