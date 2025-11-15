@@ -45,3 +45,18 @@ impl Board {
   }
 
 }
+
+#[inline(always)]
+pub fn get_raycast_from_square_in_direction(occupancy: u64, sq: usize, dir: usize) -> u64 {
+  let is_up: bool = dir / 4 == 0;
+  let mut ray: u64 = RAY_TABLE[sq][dir];
+  let blockers: u64 = occupancy & ray;
+
+  if blockers != 0 {
+    let first_blocker: u32 = if is_up { blockers.trailing_zeros() } else { 63 - blockers.leading_zeros() };
+
+    ray &= !RAY_TABLE[first_blocker as usize][dir];
+  }
+
+  return ray;
+}
