@@ -33,4 +33,21 @@ impl ChessMove {
       promotion_piece: promotion_piece
     }
   }
+
+  pub fn capture(
+    piece_type: PieceType,
+    from_square: BoardSquare,
+    to_square: BoardSquare,
+    promotion_piece: Option<PieceType>
+  ) -> Self {
+    return Self {
+      move_type: MoveType::Capture,
+      piece_type: piece_type,
+      from_square: from_square,
+      to_square: to_square,
+      rook_from: BoardSquare::new(),
+      rook_to: BoardSquare::new(),
+      promotion_piece: promotion_piece
+    }
+  }
 }
