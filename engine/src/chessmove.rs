@@ -10,6 +10,5 @@ pub struct ChessMove {
   pub to_square: BoardSquare,
   pub rook_from: BoardSquare,
   pub rook_to: BoardSquare,
-  pub is_promotion: bool,
-  pub promotion_piece: PieceType
+  pub promotion_piece: Option<PieceType>
 }
