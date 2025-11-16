@@ -1,6 +1,6 @@
 
 pub enum MoveType {
-  Move,
+  Quiet,
   Capture,
   Castle,
   EnPassant
