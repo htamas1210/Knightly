@@ -22,6 +22,68 @@ A vágyálom rendszer alapját egy központi szerver képezné, amely kezeli a f
 A platform célja a megbízható és folyamatos működés, akár nagyobb terhelés mellett is. A rendszer fejlesztése során kiemelt szempont lenne a biztonság (adatvédelem, csalás elleni védelem), a stabil hálózati kommunikáció, valamint a bővíthetőség – például ranglisták, versenyek vagy mobilalkalmazás későbbi integrálásának lehetősége.
 
 Összességében a vágyálom rendszer egy minden szempontból teljes értékű, közösségorientált sakkalkalmazás lenne, amely a mostani, helyi hálózaton működő változatból fejlődne tovább egy interneten keresztül bárhonnan elérhető platformmá.
+
+## 3. Igényelt funkciók
+
+### Alapok
+- Két játékos közti sakkjátszma lebonyolítása.
+- Teljes szabályrendszer megvalósítása (érvényes lépések, sakk/sakkmatt/patt felismerése).
+- Új játék indítása.
+- Játékosok nevének megadása a játszma elején.
+- Felhasználóbarát grafikus felület (UI) – látható tábla, figurák, órák, státuszjelzések.
+- Játékoslépések vizuális kiemelése (pl. kijelölt mező, lehetséges lépések megjelenítése).
+- A játék állapotának kijelzése (folyamatban, sakk, matt, döntetlen).
+  
+### LAN és hálózati funkciók
+- „Szerver indítása” funkció – a játékos hostként indíthat egy helyi szervert.
+- „Csatlakozás” funkció – másik játékos IP-cím alapján tud csatlakozni.
+- Helyi hálózaton keresztüli valós idejű kommunikáció.
+- LAN játék automatikus felfedezése (broadcast keresés).
+- Játék mentése és visszatöltése hálózati módban.
+
+### Online vágyálom funkciók
+- Felhasználói regisztráció és bejelentkezés.
+- Jelszóval védett fiókok, email- vagy OAuth-alapú hitelesítés (Google, GitHub stb.).
+- Profiloldal megtekintése (név, avatar, statisztikák, értékszám).
+- Automatikus matchmaking rendszer.
+- Kézi játékindítás – meghívó küldése barátnak.
+- Játszmák mentése és visszajátszása.
+- Játszmaelemzés – lépések listázása, hibák kiemelése.
+- Webes felület vagy mobilalkalmazás támogatása.
+- Játék előzményeinek és statisztikáinak megtekintése (győzelmek, vereségek, döntetlenek).
+- Automatikus szervermentés és adatbázis szinkronizáció.
+
+### Felhasználói felület
+- Letisztult, reszponzív, platformfüggetlen felület (asztali és webes verzió).
+- Sötét/világos téma lehetősége.
+- Egyéni figurakészlet vagy tábla kinézet választása.
+- Animált figuramozgások.
+- Egérrel és billentyűzettel is vezérelhető játék.
+- Hangjelzések a lépésekhez és az idő lejártához.
+- Lépéselőzmények (move list) megjelenítése oldalt.
+- Tábla forgatásának lehetősége (pl. a fehér vagy fekete nézőpontból).
+- Állapotjelzők (sakk, matt, döntetlen, várakozás az ellenfélre).
+- Teljes képernyős mód.
+
+### Technikai / fejlesztői funkciók
+- Kliens–szerver architektúra.
+- REST API vagy WebSocket alapú kommunikáció.
+- Adatbázis a felhasználói adatok és meccsek tárolására (pl. SQLite, PostgreSQL, MongoDB).
+- Logolási és hibakezelési rendszer.
+- Automatikus mentés és adatvisszaállítás.
+- Verziókezelés (Git).
+- Tesztelhető, moduláris kódszerkezet (külön modulok: logika, UI, hálózat, adat).
+- Cross-platform működés (Windows, Linux, esetleg web).
+
+### További funkciók
+- Egyszemélyes mód (ember vs. gép, AI-bot).
+- Több nehézségi szintű AI.
+- Oktató mód (javasolt lépések, hibák magyarázata).
+- Hivatalos FEN/PGN formátum export/import.
+- Beépített sakkfeladványok, kihívások.
+- Érintéses vezérlés mobilon.
+- Többnyelvű felület (pl. magyar, angol).
+
 ## 4. Rendszer követelmények
 
 A rendszer célja egy kétjátékos sakkalkalmazás megvalósítása, amely alapvetően hálózati kapcsolat (LAN vagy internet) segítségével biztosítja a valós idejű játékot. A rendszer kliens–szerver architektúrán alapul, ahol az egyes komponensek jól elkülönülten, meghatározott feladatokat látnak el.
