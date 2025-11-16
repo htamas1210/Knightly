@@ -12,4 +12,21 @@ impl BoardSquare {
       y: 0
     };
   }
+
+  pub fn from_coord(x: usize, y: usize) -> Self {
+    
+    #[cfg(debug_assertions)]
+    {
+      if x > 7 {
+        println!("Warning: x coordinate of square is bigger than 7, it might not be on the board!");
+      }
+      if y > 7 {
+        println!("Warning: y coordinate of square is bigger than 7, it might not be on the board!");
+      }
+    }
+    return Self {
+      x: x,
+      y: y
+    };
+  }
 }
