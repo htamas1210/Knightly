@@ -24,5 +24,5 @@ pub enum BitMoveType {
   Quiet,
   Capture,
   Castle,
-  En_Passant
+  EnPassant
 }
