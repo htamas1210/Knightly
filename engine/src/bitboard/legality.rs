@@ -94,3 +94,34 @@ impl Board {
   }
 
 }
+
+// <----- TESTS ----->
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn check_test_test() {
+
+    let fens = [
+      "rnb1k1nr/pppppppp/4q3/8/1b6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",      // no check
+      "rnb1k1nr/pppppppp/4q3/8/1b1P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",   // single check
+      "rnb1k1nr/ppp1p2p/3pq1p1/8/1b1P1P2/8/PPP2PPP/RNBQKBNR w KQkq - 0 1"  // double check
+      ];
+    let expected_results = [
+      CheckInfo { check_count: 0, move_mask: 0xFFFF_FFFF_FFFF_FFFF },
+      CheckInfo { check_count: 1, move_mask: 0x0000_0000_0204_0800 },
+      CheckInfo { check_count: 2, move_mask: 0x0000_0000_0000_0000 }
+    ];
+
+    for test_nr in 0..3 {
+      let fen = fens[test_nr];
+      let board =  Board::build(fen);
+      let check_test_actual = board.check_test();
+      assert_eq!(check_test_actual.check_count, expected_results[test_nr].check_count);
+      assert_eq!(check_test_actual.move_mask, expected_results[test_nr].move_mask);
+    }
+
+  }
+}
