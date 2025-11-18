@@ -106,7 +106,7 @@ mod tests {
 
     let fens = [
       "rnb1k1nr/pppppppp/4q3/8/1b6/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",      // no check
-      "rnb1k1nr/pppppppp/4q3/8/1b1P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",   // single check
+      "rnb1k1nr/pppppppp/4q3/8/1b1P4/8/PPP1PPPP/RNBQKBNR w KQkq d3 0 1",   // single check
       "rnb1k1nr/ppp1p2p/3pq1p1/8/1b1P1P2/8/PPP2PPP/RNBQKBNR w KQkq - 0 1"  // double check
       ];
     let expected_results = [
