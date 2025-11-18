@@ -1,10 +1,11 @@
 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct BitMove {
 
-  pub move_type: BitMoveType,
-  pub from_square: u8,
-  pub to_square: u8,
-  pub promotion_piece: Option<u8>
+  move_type: BitMoveType,
+  from_square: u8,
+  to_square: u8,
+  promotion_piece: Option<u8>
 }
 
 impl BitMove {
@@ -36,8 +37,26 @@ impl BitMove {
       promotion_piece: None
     };
   }
+
+  #[inline(always)]
+  pub fn move_type(&self) -> BitMoveType {
+    return self.move_type;
+  }
+  #[inline(always)]
+  pub fn from_square(&self) -> u8 {
+    return self.from_square;
+  }
+  #[inline(always)]
+  pub fn to_square(&self) -> u8 {
+    return self.to_square;
+  }
+  #[inline(always)]
+  pub fn promotion_piece(&self) -> Option<u8> {
+    return self.promotion_piece;
+  }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum BitMoveType {
   Quiet,
   Capture,
