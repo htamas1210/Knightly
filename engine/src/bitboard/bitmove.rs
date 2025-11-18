@@ -18,6 +18,15 @@ impl BitMove {
       promotion_piece: promotion_piece
     };
   }
+  #[inline]
+  pub fn capture(from: u8, to: u8, promotion_piece: Option<u8>) -> Self {
+    return Self {
+      move_type: BitMoveType::Capture,
+      from_square: from,
+      to_square: to,
+      promotion_piece: promotion_piece
+    };
+  }
 }
 
 pub enum BitMoveType {
