@@ -12,6 +12,7 @@ enum ClientMessage {
     Move { from: String, to: String },
     Resign,
     Chat { text: String },
+    RequestLegalMoves { fen: String },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -153,6 +154,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "help" => {
                 print_help();
+            }
+            "requestmoves" => {
+                if parts.len() >= 2 {
+                    let fen = parts[1..].join(" ");
+                    let message = ClientMessage::RequestLegalMoves { fen };
+                    send_message(&mut write, &message).await?;
+                }
             }
             _ => {
                 println!(
