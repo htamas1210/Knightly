@@ -27,6 +27,15 @@ impl BitMove {
       promotion_piece: promotion_piece
     };
   }
+  #[inline]
+  pub fn castle(from: u8, to: u8) -> Self {
+    return Self {
+      move_type: BitMoveType::Castle,
+      from_square: from,
+      to_square: to,
+      promotion_piece: None
+    };
+  }
 }
 
 pub enum BitMoveType {
