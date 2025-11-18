@@ -184,6 +184,12 @@ pub async fn handle_connection(
                     )
                     .await;
                 }
+                FindMatch => {
+                    let mut wait_queue = waiting_queue.lock().await;
+                    wait_queue.push_back(player_id.clone());
+                    println!("Appended {} to the waiting queue", player_id);
+                    println!("queue {:?}", wait_queue);
+                }
                 _ => {}
             }
         }
