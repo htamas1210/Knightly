@@ -1,4 +1,5 @@
 use crate::connection::ClientEvent::*;
+use engine::get_available_moves;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -189,6 +190,17 @@ pub async fn handle_connection(
                     wait_queue.push_back(player_id.clone());
                     println!("Appended {} to the waiting queue", player_id);
                     println!("queue {:?}", wait_queue);
+                }
+                Move { from, to } => {}
+                RequestLegalMoves { fen } => {
+                    let moves = get_available_moves(&fen);
+                    let _ = send_message_to_player(
+                        &connections,
+                        player_id,
+                        &serde_json::to_string(&moves).unwrap(),
+                    )
+                    .await;
+                    println!("Sent moves to player: {}", player_id);
                 }
                 _ => {}
             }
