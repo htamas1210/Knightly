@@ -1,7 +1,55 @@
 use super::board::Board;
 use super::attackmaps::RAY_TABLE;
+use super::checkinfo::CheckInfo;
+use super::attacks::get_raycast_from_square_in_direction;
 
 impl Board {
+
+  pub fn check_test(&self) -> CheckInfo {
+    let mut check_info: CheckInfo = CheckInfo::new();
+    let offset: usize = 6 * self.side_to_move as usize;
+    let king: u64 = self.bitboards[5 + offset];
+    let king_sq = king.trailing_zeros() as usize;
+    let occupancy = self.occupancy[2];
+
+    // queen-rook checks (+)
+    let attacker_mask = self.bitboards[10 - offset] | self.bitboards[9 - offset];
+
+    for dir in [0, 2, 4, 6] {
+      let threat_mask: u64 = get_raycast_from_square_in_direction(occupancy, king_sq, dir);
+      if threat_mask & attacker_mask != 0 {
+        check_info.add_checker(threat_mask);
+      }
+    }
+
+    // queen-bishop checks (x)
+    let attacker_mask = self.bitboards[10 - offset] | self.bitboards[8 - offset];
+
+    for dir in [1, 3, 5, 7] {
+      let threat_mask = get_raycast_from_square_in_direction(occupancy, king_sq, dir);
+      if threat_mask & attacker_mask != 0 {
+        check_info.add_checker(threat_mask);
+      }
+    }
+
+    // knight checks (L)
+    let attacker_mask = self.bitboards[7 - offset];
+    let threat_mask = self.get_pseudo_knight_moves(king_sq as u32);
+    let checker = threat_mask & attacker_mask;
+    if checker != 0 {
+      check_info.add_checker(checker);
+    }
+
+    // pawn checks (v)
+    let attacker_mask = self.bitboards[6 - offset];
+    let threat_mask = self.get_pseudo_pawn_captures(king_sq as u32);
+    let checker = threat_mask & attacker_mask;
+    if checker != 0 {
+      check_info.add_checker(checker);
+    }
+
+    return check_info;
+  }
 
   pub(in super) fn calc_pinned_squares(&mut self) {
     self.pinned_squares = [4; 64];
