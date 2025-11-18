@@ -1,3 +1,4 @@
+use super::utils::*;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct BitMove {
@@ -53,6 +54,17 @@ impl BitMove {
   #[inline(always)]
   pub fn promotion_piece(&self) -> Option<u8> {
     return self.promotion_piece;
+  }
+
+  pub fn uci_notation(&self) -> String {
+    let mut notation = notation_from_square_number(self.from_square());
+    notation.push_str(&notation_from_square_number(self.to_square()));
+
+    if let Some(promotion_piece) = self.promotion_piece {
+      notation.push(get_character_by_piece_id(promotion_piece).to_ascii_lowercase());
+    }
+
+    return notation;
   }
 }
 
