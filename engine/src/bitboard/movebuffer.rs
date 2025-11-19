@@ -20,7 +20,7 @@ impl MoveBuffer {
     self.buffer[self.count] = bitmove;
     self.count += 1;
   }
-  #[inline]
+  #[inline(always)]
   pub fn clear(&mut self) {
     self.count = 0;
   }
