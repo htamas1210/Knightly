@@ -71,4 +71,8 @@ impl Board {
       }
     }
   }
+  fn add_pawn_moves(&self, capture_buffer: &mut MoveBuffer, quiet_buffer: &mut MoveBuffer, move_mask: u64) {
+    self.add_pawn_captures(capture_buffer, move_mask);
+    self.add_pawn_quiets(quiet_buffer, move_mask);
+  }
 }
