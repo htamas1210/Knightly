@@ -24,4 +24,8 @@ impl MoveBuffer {
   pub fn count(&self) -> usize{
     return self.count;
   }
+  #[inline(always)]
+  pub fn get(&self, idx: usize) -> &BitMove {
+    return &self.buffer[idx];
+  }
 }
