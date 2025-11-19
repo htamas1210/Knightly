@@ -64,7 +64,7 @@ impl Board {
 
     for (i, c) in coming_up.chars().enumerate() {
       if pieces.contains(&c) {
-        // board.place_piece(row*8 + col, c);
+        board.place_piece(row*8 + col, c);
         col += 1;
       }
       else if ('1'..='8').contains(&c) {
@@ -179,4 +179,21 @@ impl Board {
     }
   }
 
+  pub fn place_piece(&mut self, sq: i32, piece: char) {
+    match piece {
+      'p' => {self.bitboards[6] |= 1 << sq}
+      'n' => {self.bitboards[7] |= 1 << sq}
+      'b' => {self.bitboards[8] |= 1 << sq}
+      'r' => {self.bitboards[9] |= 1 << sq}
+      'q' => {self.bitboards[10] |= 1 << sq}
+      'k' => {self.bitboards[11] |= 1 << sq}
+      'P' => {self.bitboards[0] |= 1 << sq}
+      'N' => {self.bitboards[1] |= 1 << sq}
+      'B' => {self.bitboards[2] |= 1 << sq}
+      'R' => {self.bitboards[3] |= 1 << sq}
+      'Q' => {self.bitboards[4] |= 1 << sq}
+      'K' => {self.bitboards[5] |= 1 << sq}
+       _  => ()
+    }
+  }
 }
