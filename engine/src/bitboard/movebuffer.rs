@@ -20,6 +20,11 @@ impl MoveBuffer {
     self.buffer[self.count] = bitmove;
     self.count += 1;
   }
+  #[inline]
+  pub fn append(&mut self, other: &MoveBuffer) {
+    self.buffer[self.count..self.count + other.count()].copy_from_slice(other.contents());
+    self.count += other.count();
+  }
   #[inline(always)]
   pub fn clear(&mut self) {
     self.count = 0;
