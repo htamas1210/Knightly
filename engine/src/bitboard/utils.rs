@@ -1,13 +1,13 @@
 #[inline(always)]
-pub fn pop_lsb(value: &mut u64) -> usize {
-  let idx = value.trailing_zeros() as usize;
+pub fn pop_lsb(value: &mut u64) -> u32 {
+  let idx = value.trailing_zeros();
   *value &= !(1 << idx);
   return idx;
 }
 
 #[inline(always)]
-pub fn pop_msb(value: &mut u64) -> usize {
-  let idx = 63 - value.leading_zeros() as usize;
+pub fn pop_msb(value: &mut u64) -> u32 {
+  let idx = 63 - value.leading_zeros();
   *value &= !(1 << idx);
   return idx;
 }
@@ -72,7 +72,7 @@ mod tests {
       0xBEAC_DBE0_903A_AC00,
       0x01E8_C895_A6F0_0000
     ];
-    let expected_values: [usize; 6] = [63, 0, 4, 2, 10, 20];
+    let expected_values: [u32; 6] = [63, 0, 4, 2, 10, 20];
 
     // tests
     for index in 0..6 {
@@ -92,7 +92,7 @@ mod tests {
       0x0000_C1C3_201C_0DB1,
       0x0000_0203_0DE4_E944
     ];
-    let expected_values: [usize; 6] = [63, 0, 61, 57, 47, 41];
+    let expected_values: [u32; 6] = [63, 0, 61, 57, 47, 41];
 
     // tests
     for index in 0..6 {

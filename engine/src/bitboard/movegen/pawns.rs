@@ -1,3 +1,5 @@
+use crate::bitboard::utils::pop_lsb;
+
 use super::*;
 
 impl Board {
@@ -6,8 +8,7 @@ impl Board {
     let offset: u8 = self.side_to_move * 6;
     let mut pawns: u64 = self.bitboards[offset as usize];
     while pawns != 0 {
-      let next_sq = pawns.trailing_zeros();
-      pawns &= !(1 << next_sq);
+      let next_sq = pop_lsb(&mut pawns);
 
       let mut quiets: u64 = self.get_pseudo_pawn_moves(next_sq) & move_mask;
       quiets = self.get_pin_masked_moves(quiets, next_sq);
@@ -40,8 +41,7 @@ impl Board {
     let mut pawns: u64 = self.bitboards[offset];
     let opponents = self.occupancy[1 - self.side_to_move as usize];
     while pawns != 0 {
-      let next_sq: u32 = pawns.trailing_zeros();
-      pawns &= !(1 << next_sq);
+      let next_sq = pop_lsb(&mut pawns);
 
       let mut attacks: u64 = self.get_pseudo_pawn_captures(next_sq) & move_mask;
       attacks = self.get_pin_masked_moves(attacks, next_sq);
