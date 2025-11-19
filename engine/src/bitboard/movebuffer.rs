@@ -32,4 +32,8 @@ impl MoveBuffer {
   pub fn get(&self, idx: usize) -> &BitMove {
     return &self.buffer[idx];
   }
+  #[inline(always)]
+  pub fn contents(&self) -> &[BitMove] {
+    return &self.buffer[0..self.count];
+  } 
 }
