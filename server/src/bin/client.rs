@@ -68,6 +68,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         println!("Welcome! Your player ID: {}", player_id);
                                     }
                                 }
+                                "match_found" => {
+                                    println!(
+                                        "opponent: {}, match_id: {}, color: {}",
+                                        parsed.opponent.unwrap(),
+                                        parsed.match_id.unwrap(),
+                                        parsed.color.unwrap()
+                                    );
+                                }
                                 _ => {
                                     println!("cucc: {:?}", parsed);
                                 }
@@ -199,5 +207,6 @@ fn print_help() {
     println!("  resign             - Resign from current game");
     println!("  help               - Show this help");
     println!("  quit               - Exit the client");
+    println!("  requestmoves       - Request the legal moves");
     println!();
 }

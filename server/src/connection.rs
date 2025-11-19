@@ -28,10 +28,22 @@ pub fn new_waiting_queue() -> WaitingQueue {
     Arc::new(Mutex::new(VecDeque::new()))
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Step {
     pub from: String,
     pub to: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ServerMessage {
+    #[serde(rename = "type")]
+    message_type: String,
+    player_id: Option<String>,
+    match_id: Option<String>,
+    opponent: Option<String>,
+    color: Option<String>,
+    reason: Option<String>,
+    fen: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -39,7 +51,7 @@ pub struct Step {
 enum ClientEvent {
     Join { username: String },
     FindMatch,
-    Move { from: String, to: String },
+    Move { fen: String },
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
@@ -64,23 +76,19 @@ pub struct GameMatch {
     pub player_white: Uuid,
     pub player_black: Uuid,
     pub board_state: String,
-    pub move_history: Vec<String>,
+    pub move_history: Vec<Step>,
 }
 
 // Message sending utilities
-pub async fn send_message_to_player(
-    connections: &ConnectionMap,
-    player_id: Uuid,
+pub async fn send_message_to_player_connection(
+    connection: &mut PlayerConnection,
     message: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut connections_lock = connections.lock().await;
-    if let Some(connection) = connections_lock.get_mut(&player_id) {
-        connection
-            .tx
-            .send(Message::Text(message.to_string()))
-            .await?;
-    }
-    Ok(())
+) -> Result<(), tokio_tungstenite::tungstenite::Error> {
+    println!("sending message to: {}", connection.id);
+
+    let res = connection.tx.send(Message::Text(message.to_string())).await;
+
+    res
 }
 
 pub async fn broadcast_to_all(connections: &ConnectionMap, message: &str) {
@@ -108,8 +116,24 @@ pub async fn broadcast_to_match(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let matches_lock = matches.lock().await;
     if let Some(game_match) = matches_lock.get(&match_id) {
-        send_message_to_player(connections, game_match.player_white, message).await?;
-        send_message_to_player(connections, game_match.player_black, message).await?;
+        send_message_to_player_connection(
+            connections
+                .lock()
+                .await
+                .get_mut(&game_match.player_white)
+                .unwrap(),
+            message,
+        )
+        .await?;
+        send_message_to_player_connection(
+            connections
+                .lock()
+                .await
+                .get_mut(&game_match.player_black)
+                .unwrap(),
+            message,
+        )
+        .await?;
     }
     Ok(())
 }
@@ -144,14 +168,6 @@ pub async fn handle_connection(
 
     println!("New connection: {}", player_id);
 
-    // Send welcome message
-    let _ = send_message_to_player(
-        &connections,
-        player_id,
-        &format!(r#"{{"type": "welcome", "player_id": "{}"}}"#, player_id),
-    )
-    .await;
-
     // Message processing loop
     while let Some(Ok(message)) = read.next().await {
         if message.is_text() {
@@ -178,9 +194,9 @@ pub async fn handle_connection(
 
                     println!("response: {:?}", response);
 
-                    let _ = send_message_to_player(
-                        &connections,
-                        player_id,
+                    let mut conn_map = connections.lock().await;
+                    let _ = send_message_to_player_connection(
+                        conn_map.get_mut(&player_id).unwrap(),
                         &serde_json::to_string(&response).unwrap(),
                     )
                     .await;
@@ -191,12 +207,21 @@ pub async fn handle_connection(
                     println!("Appended {} to the waiting queue", player_id);
                     println!("queue {:?}", wait_queue);
                 }
-                Move { from, to } => {}
+                Move { fen } => {
+                    let match_id = connections
+                        .lock()
+                        .await
+                        .get(&player_id)
+                        .unwrap()
+                        .current_match
+                        .unwrap();
+
+                    let _ = broadcast_to_match(&connections, &matches, match_id, &fen).await;
+                }
                 RequestLegalMoves { fen } => {
                     let moves = get_available_moves(&fen);
-                    let _ = send_message_to_player(
-                        &connections,
-                        player_id,
+                    let _ = send_message_to_player_connection(
+                        connections.lock().await.get_mut(&player_id).unwrap(),
                         &serde_json::to_string(&moves).unwrap(),
                     )
                     .await;
@@ -239,7 +264,11 @@ mod tests {
         let connections = new_connection_map();
         let player_id = Uuid::new_v4();
 
-        let result = send_message_to_player(&connections, player_id, "test message").await;
+        let result = send_message_to_player_connection(
+            connections.lock().await.get_mut(&player_id).unwrap(),
+            &"test message",
+        )
+        .await;
         assert!(result.is_ok(), "Should handle missing player gracefully");
     }
 
