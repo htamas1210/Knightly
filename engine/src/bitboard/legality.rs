@@ -93,6 +93,13 @@ impl Board {
     }
   }
 
+  #[inline]
+  pub(in super) fn get_pin_masked_moves(&self, moves: u64, sq: u32) -> u64 {
+    let sq: usize = sq as usize;
+    if self.pinned_squares[sq] == 4 { return moves; }
+    let dir: u8 = self.pinned_squares[sq];
+    return moves & (RAY_TABLE[sq][dir as usize] | RAY_TABLE[sq][4 + dir as usize]);
+  }
 }
 
 // <----- TESTS ----->

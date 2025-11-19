@@ -2,6 +2,7 @@ mod pawns;
 
 use super::board::Board;
 use super::movebuffer::MoveBuffer;
+use super::bitmove::BitMove;
 
 impl Board {
 
