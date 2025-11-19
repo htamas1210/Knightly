@@ -20,6 +20,10 @@ impl MoveBuffer {
     self.buffer[self.count] = bitmove;
     self.count += 1;
   }
+  #[inline]
+  pub fn clear(&mut self) {
+    self.count = 0;
+  }
   #[inline(always)]
   pub fn count(&self) -> usize{
     return self.count;
