@@ -35,4 +35,40 @@ impl Board {
       }
     }
   }
+  fn add_pawn_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+    let offset = 6 * self.side_to_move as usize;
+    let mut pawns: u64 = self.bitboards[offset];
+    let opponents = self.occupancy[1 - self.side_to_move as usize];
+    while pawns != 0 {
+      let next_sq: u32 = pawns.trailing_zeros();
+      pawns &= !(1 << next_sq);
+
+      let mut attacks: u64 = self.get_pseudo_pawn_captures(next_sq) & move_mask;
+      attacks = self.get_pin_masked_moves(attacks, next_sq);
+      attacks &= opponents;
+
+      while attacks != 0 {
+        let to_sq = attacks.trailing_zeros();
+
+        if (self.side_to_move == 0 && attacks.trailing_zeros() / 8 == 7)
+        || (self.side_to_move == 1 && attacks.trailing_zeros() / 8 == 0) {
+          for piece_type in [3, 2, 1, 0] {
+            buffer.add(BitMove::capture(
+              next_sq as u8,
+              to_sq as u8,
+              Some(piece_type)
+            ));
+          }
+        }
+        else {
+          buffer.add(BitMove::capture(
+            next_sq as u8,
+            to_sq as u8,
+            None
+          ));
+        }
+        attacks &= !(1 << to_sq);
+      }
+    }
+  }
 }
