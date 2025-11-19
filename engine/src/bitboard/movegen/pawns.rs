@@ -1,5 +1,3 @@
-use crate::bitboard::utils::pop_lsb;
-
 use super::*;
 
 impl Board {

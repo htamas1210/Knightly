@@ -4,6 +4,7 @@ mod knights;
 use super::board::Board;
 use super::movebuffer::MoveBuffer;
 use super::bitmove::BitMove;
+use super::utils::*;
 
 impl Board {
 
