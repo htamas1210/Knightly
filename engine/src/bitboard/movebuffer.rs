@@ -14,9 +14,14 @@ impl MoveBuffer {
       count: 0
     };
   }
+
   #[inline]
   pub fn add(&mut self, bitmove: BitMove) {
     self.buffer[self.count] = bitmove;
     self.count += 1;
+  }
+  #[inline(always)]
+  pub fn count(&self) -> usize{
+    return self.count;
   }
 }
