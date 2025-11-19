@@ -1,3 +1,5 @@
+mod pawns;
+
 use super::board::Board;
 use super::movebuffer::MoveBuffer;
 
