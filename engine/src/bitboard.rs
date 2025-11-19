@@ -5,5 +5,6 @@ mod checkinfo;
 mod attacks;
 mod bitmove;
 mod movebuffer;
+mod movegen;
 
 pub mod board;
