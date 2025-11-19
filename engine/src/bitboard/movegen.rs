@@ -1,4 +1,5 @@
 mod pawns;
+mod knights;
 
 use super::board::Board;
 use super::movebuffer::MoveBuffer;
