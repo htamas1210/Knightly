@@ -14,4 +14,9 @@ impl MoveBuffer {
       count: 0
     };
   }
+  #[inline]
+  pub fn add(&mut self, bitmove: BitMove) {
+    self.buffer[self.count] = bitmove;
+    self.count += 1;
+  }
 }
