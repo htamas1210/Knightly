@@ -5,6 +5,8 @@ impl Board {
 
   const RANK_2: u64 = 0x0000_0000_0000_FF00;
   const RANK_7: u64 = 0x00FF_0000_0000_0000;
+  const A_FILE: u64 = 0x0101_0101_0101_0101;
+  const H_FILE: u64 = 0x8080_8080_8080_8080;
 
   pub fn get_pseudo_pawn_moves(&self, sq: u32) -> u64 {
     let pawn: u64 = 1 << sq;
@@ -122,6 +124,59 @@ impl Board {
     threat_mask = PAWN_ATTACK_MAP[king_sq as usize][self.side_to_move as usize];
     attacker_mask = self.bitboards[6 - offset];
     return threat_mask & attacker_mask != 0;
+  }
+  pub fn get_safe_king_squares(&self) -> u64 {
+    let offset: usize = 6 * (1 - self.side_to_move as usize);
+    let king_sq = self.bitboards[11 - offset].trailing_zeros() as usize;
+    let bishop_mask = KING_SAFETY_BISHOP_MASK[king_sq];
+    let rook_mask = KING_SAFETY_ROOK_MASK[king_sq];
+    let mut attack_map: u64 = 0u64;
+
+    let mut board: u64 = self.bitboards[offset];
+    if self.side_to_move() == 0 {
+      attack_map |= (board >> 9 & !Self::H_FILE) | (board >> 7 & !Self::A_FILE);
+    }
+    else {
+      attack_map |= (board << 9 & !Self::A_FILE) | (board << 7 & !Self::H_FILE);
+    }
+
+    board = self.bitboards[offset + 1];
+    while board != 0 {
+      let piece_sq: u32 = board.trailing_zeros();
+      board &= !(1 << piece_sq);
+
+      attack_map |= self.get_pseudo_knight_moves(piece_sq);
+    }
+
+    board = self.bitboards[offset + 2] & bishop_mask;
+    while board != 0 {
+      let piece_sq: u32 = board.trailing_zeros();
+      board &= !(1 << piece_sq);
+
+      attack_map |= self.get_pseudo_bishop_moves_ignore_king(piece_sq);
+    }
+
+    board = self.bitboards[offset + 3] & rook_mask;
+    while board != 0 {
+      let piece_sq: u32 = board.trailing_zeros();
+      board &= !(1 << piece_sq);
+
+      attack_map |= self.get_pseudo_rook_moves_ignore_king(piece_sq);
+    }
+
+    board = self.bitboards[offset + 4] & (bishop_mask | rook_mask);
+    while board != 0 {
+      let piece_sq: u32 = board.trailing_zeros();
+      board &= !(1 << piece_sq);
+
+      attack_map |= self.get_pseudo_rook_moves_ignore_king(piece_sq) | self.get_pseudo_bishop_moves_ignore_king(piece_sq);
+    }
+
+    board = self.bitboards[offset + 5];
+    let piece_sq: u32 = board.trailing_zeros();
+    attack_map |= self.get_pseudo_king_moves(piece_sq);
+
+    return !attack_map;
   }
 }
 
