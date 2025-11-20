@@ -1,6 +1,7 @@
 mod pawns;
 mod knights;
 mod bishops;
+mod rooks;
 
 use super::board::Board;
 use super::movebuffer::MoveBuffer;
