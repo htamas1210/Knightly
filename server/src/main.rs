@@ -1,6 +1,6 @@
 mod connection;
-mod events;
 mod matchmaking;
+mod messages;
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -14,15 +14,11 @@ async fn main() -> anyhow::Result<()> {
     let matches = connection::new_match_map();
     let waiting_queue = connection::new_waiting_queue();
 
-    // Event system for communication between components
-    let event_system = events::EventSystem::new();
-
     // Start matchmaking background task
     let matchmaker = matchmaking::MatchmakingSystem::new(
         connections.clone(),
         matches.clone(),
         waiting_queue.clone(),
-        event_system.clone(),
     );
     tokio::spawn(async move {
         matchmaker.run().await;
@@ -33,17 +29,10 @@ async fn main() -> anyhow::Result<()> {
         let connections = connections.clone();
         let matches = matches.clone();
         let waiting_queue = waiting_queue.clone();
-        let event_system = event_system.clone();
 
         tokio::spawn(async move {
-            if let Err(e) = connection::handle_connection(
-                stream,
-                connections,
-                matches,
-                waiting_queue,
-                event_system,
-            )
-            .await
+            if let Err(e) =
+                connection::handle_connection(stream, connections, matches, waiting_queue).await
             {
                 eprintln!("Connection error: {}", e);
             }

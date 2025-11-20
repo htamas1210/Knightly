@@ -1,5 +1,4 @@
 use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue};
-use crate::events::EventSystem;
 use rand::random;
 use uuid::Uuid;
 
@@ -7,21 +6,14 @@ pub struct MatchmakingSystem {
     connections: ConnectionMap,
     matches: MatchMap,
     waiting_queue: WaitingQueue,
-    event_system: EventSystem,
 }
 
 impl MatchmakingSystem {
-    pub fn new(
-        connections: ConnectionMap,
-        matches: MatchMap,
-        waiting_queue: WaitingQueue,
-        event_system: EventSystem,
-    ) -> Self {
+    pub fn new(connections: ConnectionMap, matches: MatchMap, waiting_queue: WaitingQueue) -> Self {
         Self {
             connections,
             matches,
             waiting_queue,
-            event_system,
         }
     }
 
@@ -114,7 +106,6 @@ impl MatchmakingSystem {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::events::EventSystem;
     use uuid::Uuid;
 
     use crate::connection::new_connection_map;
@@ -126,14 +117,9 @@ mod tests {
         let connections = new_connection_map();
         let matches = new_match_map();
         let waiting_queue = new_waiting_queue();
-        let event_system = EventSystem::new();
 
-        let matchmaking = MatchmakingSystem::new(
-            connections.clone(),
-            matches.clone(),
-            waiting_queue.clone(),
-            event_system.clone(),
-        );
+        let matchmaking =
+            MatchmakingSystem::new(connections.clone(), matches.clone(), waiting_queue.clone());
 
         let player1 = Uuid::new_v4();
         let player2 = Uuid::new_v4();
@@ -172,14 +158,9 @@ mod tests {
         let connections = new_connection_map();
         let matches = new_match_map();
         let waiting_queue = new_waiting_queue();
-        let event_system = EventSystem::new();
 
-        let matchmaking = MatchmakingSystem::new(
-            connections.clone(),
-            matches.clone(),
-            waiting_queue.clone(),
-            event_system.clone(),
-        );
+        let matchmaking =
+            MatchmakingSystem::new(connections.clone(), matches.clone(), waiting_queue.clone());
 
         let player1 = Uuid::new_v4();
         {

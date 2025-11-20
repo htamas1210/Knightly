@@ -1,3 +1,5 @@
+use crate::connection::ClientEvent::*;
+use engine::get_available_moves;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -26,6 +28,28 @@ pub fn new_waiting_queue() -> WaitingQueue {
     Arc::new(Mutex::new(VecDeque::new()))
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Step {
+    pub from: String,
+    pub to: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+enum ClientEvent {
+    Join { username: String },
+    FindMatch,
+    Move { from: String, to: String },
+    Resign,
+    Chat { text: String },
+    RequestLegalMoves { fen: String },
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EventResponse {
+    pub response: Result<(), String>,
+}
+
 #[derive(Debug)]
 pub struct PlayerConnection {
     pub id: Uuid,
@@ -41,12 +65,6 @@ pub struct GameMatch {
     pub player_black: Uuid,
     pub board_state: String,
     pub move_history: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Step {
-    pub from: String,
-    pub to: String,
 }
 
 // Message sending utilities
@@ -102,7 +120,6 @@ pub async fn handle_connection(
     connections: ConnectionMap,
     matches: MatchMap,
     waiting_queue: WaitingQueue,
-    event_system: crate::events::EventSystem,
 ) -> anyhow::Result<()> {
     use tokio_tungstenite::accept_async;
 
@@ -141,8 +158,52 @@ pub async fn handle_connection(
             let text = message.to_text()?;
             println!("Received from {}: {}", player_id, text);
 
-            // TODO: Parse and handle message with event system
-            // This will be implemented when we integrate the event system
+            let client_data: ClientEvent = serde_json::from_str(text)
+                .expect("Failed to convert data into json at handle_connection");
+
+            println!("client: {:?}", client_data);
+
+            match client_data {
+                Join { username } => {
+                    {
+                        let mut conn_map = connections.lock().await;
+                        let player = conn_map.get_mut(&player_id).unwrap();
+                        player.username = Some(username);
+                    }
+
+                    //respone to client
+                    let response: EventResponse = EventResponse {
+                        response: core::result::Result::Ok(()),
+                    };
+
+                    println!("response: {:?}", response);
+
+                    let _ = send_message_to_player(
+                        &connections,
+                        player_id,
+                        &serde_json::to_string(&response).unwrap(),
+                    )
+                    .await;
+                }
+                FindMatch => {
+                    let mut wait_queue = waiting_queue.lock().await;
+                    wait_queue.push_back(player_id.clone());
+                    println!("Appended {} to the waiting queue", player_id);
+                    println!("queue {:?}", wait_queue);
+                }
+                Move { from, to } => {}
+                RequestLegalMoves { fen } => {
+                    let moves = get_available_moves(&fen);
+                    let _ = send_message_to_player(
+                        &connections,
+                        player_id,
+                        &serde_json::to_string(&moves).unwrap(),
+                    )
+                    .await;
+                    println!("Sent moves to player: {}", player_id);
+                }
+                _ => {}
+            }
         }
     }
 
