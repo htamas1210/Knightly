@@ -1,4 +1,5 @@
 use crate::connection::ClientEvent::*;
+use engine::chessmove::ChessMove;
 use engine::get_available_moves;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -46,24 +47,15 @@ struct ServerMessage {
     response: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum ClientEvent {
-    Join {
-        username: String,
-    },
+    Join { username: String },
     FindMatch,
-    Move {
-        step: Step, //to put into move list
-        fen: String,
-    },
+    Move { step: ChessMove, fen: String },
     Resign,
-    Chat {
-        text: String,
-    },
-    RequestLegalMoves {
-        fen: String,
-    },
+    Chat { text: String },
+    RequestLegalMoves { fen: String },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -186,7 +178,7 @@ pub async fn handle_connection(
             let client_data: ClientEvent = serde_json::from_str(text)
                 .expect("Failed to convert data into json at handle_connection");
 
-            println!("client: {:?}", client_data);
+            //println!("client: {:?}", client_data);
 
             match client_data {
                 Join { username } => {
@@ -224,7 +216,9 @@ pub async fn handle_connection(
                         .unwrap()
                         .current_match
                         .unwrap();
-                    // TODO: potentially a problem that there is a lock on it and the broadcast needs it as well
+
+                    // TODO: discuss if the fen sent by the client is before or after the move
+                    let new_fen = engine::get_board_after_move(&fen, &step);
 
                     let message: ServerMessage = ServerMessage {
                         message_type: String::from("move"),
@@ -250,7 +244,9 @@ pub async fn handle_connection(
                         match_id,
                         &serde_json::to_string(&message).unwrap(),
                     )
-                    .await; //client needs updating to test this
+                    .await;
+
+                    let res = engine::is_game_over(&new_fen); // TODO: discuss how to handle this
                 }
                 RequestLegalMoves { fen } => {
                     let moves = get_available_moves(&fen);
@@ -261,7 +257,9 @@ pub async fn handle_connection(
                     .await;
                     println!("Sent moves to player: {}", player_id);
                 }
-                _ => {}
+                _ => {
+                    println!("Not known client event");
+                }
             }
         }
     }

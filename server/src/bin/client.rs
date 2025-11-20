@@ -1,3 +1,4 @@
+use engine::{boardsquare::BoardSquare, chessmove::ChessMove, piecetype::PieceType};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
@@ -10,12 +11,12 @@ struct Step {
     to: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum ClientMessage {
     Join { username: String },
     FindMatch,
-    Move { step: Step, fen: String },
+    Move { step: ChessMove, fen: String },
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
@@ -142,14 +143,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("🔍 Searching for a match...");
             }
             "move" => {
-                if parts.len() >= 4 {
-                    let from = parts[1].to_string();
-                    let to = parts[2].to_string();
-                    let fen = parts[3].to_string();
-                    let step: Step = Step { from, to };
+                if parts.len() >= 3 {
+                    //let from = parts[1].to_string();
+                    //let to = parts[2].to_string();
+                    let fen = parts[1].to_string();
+
+                    let step = ChessMove::quiet(
+                        engine::piecetype::PieceType::WhiteBishop,
+                        BoardSquare::new(),
+                        BoardSquare { x: 1, y: 1 },
+                        None,
+                    );
+
                     let message = ClientMessage::Move { step, fen };
                     send_message(&mut write, &message).await?;
-                    println!("♟️  Sent move: {} -> {}", parts[1], parts[2]);
+                    //println!("♟️  Sent move: {} -> {}", parts[1], parts[2]);
                 } else {
                     println!("Usage: move <from> <to> (e.g., move e2 e4)");
                 }
