@@ -94,6 +94,17 @@ pub static RAY_TABLE: Lazy<[[u64; 8]; 64]> = Lazy::new(|| {
   return table;
 });
 
+pub static ROOK_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
+  let mut table = [0u64; 64];
+
+  for sq in 0..64 {
+    for dir in [0, 2, 4, 6] {
+      table[sq] |= RAY_TABLE[sq][dir];
+    }
+  }
+  table
+});
+
 
 
 // <----- TESTS ----->
