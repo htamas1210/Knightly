@@ -20,7 +20,7 @@ jobs:
           echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > service_account.json
           
           python <<'PYCODE'
-          import gspread, json, subprocess
+          import gspread, json, subprocess, time
 
           creds = json.load(open("service_account.json"))
           gc = gspread.service_account_from_dict(creds)
@@ -38,6 +38,7 @@ jobs:
 
               for i, row in enumerate(rows_to_append):
                   worksheet.insert_row(row, start_row + i)
+                  time.sleep(1)
 
 
           with open(f"{v}/test_data.log", "r") as f:
