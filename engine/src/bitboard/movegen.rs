@@ -3,6 +3,7 @@ mod knights;
 mod bishops;
 mod rooks;
 mod queens;
+mod kings;
 
 use super::board::Board;
 use super::movebuffer::MoveBuffer;
