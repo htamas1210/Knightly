@@ -254,6 +254,10 @@ pub async fn handle_connection(
                     .await;
                     println!("Sent moves to player: {}", player_id);
                 }
+                Resign => {
+                    // TODO: set game over and turn on game end ui, then delete the match
+                    println!("Resigned!");
+                }
                 _ => {
                     println!("Not known client event");
                 }
@@ -287,20 +291,30 @@ async fn cleanup_player(
 mod tests {
     use super::*;
     use uuid::Uuid;
-
-    /*#[tokio::test]
+    #[tokio::test]
     async fn test_send_message_to_nonexistent_player() {
         let connections = new_connection_map();
         let player_id = Uuid::new_v4();
 
-        let result = send_message_to_player_connection(
-            connections.lock().await.get_mut(&player_id),
-            &"test message",
-        )
-        .await;
-        assert!(result.is_ok(), "Should handle missing player gracefully");
-    }*/
-    // TODO: this test need fixing or a rewrite since we message the players differently now
+        // Test 1: Pass None directly (non-existent player)
+        let result = send_message_to_player_connection(None, "test message").await;
+
+        assert!(result.is_err(), "Should return error for None connection");
+        println!("✅ Test passed: Handles None connection correctly");
+
+        // Test 2: Try to get non-existent player from map
+        let mut conn = connections.lock().await;
+        let non_existent_connection = conn.get_mut(&player_id); // This will be None
+
+        let result2 =
+            send_message_to_player_connection(non_existent_connection, "test message").await;
+
+        assert!(
+            result2.is_err(),
+            "Should return error for non-existent player"
+        );
+        println!("✅ Test passed: Handles non-existent player in map correctly");
+    }
 
     #[tokio::test]
     async fn test_broadcast_to_empty_connections() {
