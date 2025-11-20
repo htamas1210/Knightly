@@ -38,23 +38,32 @@ pub struct Step {
 struct ServerMessage {
     #[serde(rename = "type")]
     message_type: String,
-    player_id: Option<String>,
-    match_id: Option<String>,
-    opponent: Option<String>,
+    player_id: Option<Uuid>,
+    match_id: Option<Uuid>,
+    opponent: Option<Uuid>,
     color: Option<String>,
     reason: Option<String>,
-    fen: Option<String>,
+    response: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 enum ClientEvent {
-    Join { username: String },
+    Join {
+        username: String,
+    },
     FindMatch,
-    Move { fen: String },
+    Move {
+        step: Step, //to put into move list
+        fen: String,
+    },
     Resign,
-    Chat { text: String },
-    RequestLegalMoves { fen: String },
+    Chat {
+        text: String,
+    },
+    RequestLegalMoves {
+        fen: String,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -207,7 +216,7 @@ pub async fn handle_connection(
                     println!("Appended {} to the waiting queue", player_id);
                     println!("queue {:?}", wait_queue);
                 }
-                Move { fen } => {
+                Move { step, fen } => {
                     let match_id = connections
                         .lock()
                         .await
@@ -215,8 +224,33 @@ pub async fn handle_connection(
                         .unwrap()
                         .current_match
                         .unwrap();
+                    // TODO: potentially a problem that there is a lock on it and the broadcast needs it as well
 
-                    let _ = broadcast_to_match(&connections, &matches, match_id, &fen).await;
+                    let message: ServerMessage = ServerMessage {
+                        message_type: String::from("move"),
+                        player_id: (Some(player_id.clone())),
+                        match_id: (Some(match_id.clone())),
+                        opponent: (None),
+                        color: (None),
+                        reason: (Some(String::from(
+                            "after player stepped we update the position for opponent board, and move history",
+                        ))),
+                        response: (Some(String::from(
+                            &serde_json::to_string(&Move {
+                                step: step,
+                                fen: fen,
+                            })
+                            .unwrap(),
+                        ))),
+                    };
+
+                    let _ = broadcast_to_match(
+                        &connections,
+                        &matches,
+                        match_id,
+                        &serde_json::to_string(&message).unwrap(),
+                    )
+                    .await; //client needs updating to test this
                 }
                 RequestLegalMoves { fen } => {
                     let moves = get_available_moves(&fen);

@@ -5,11 +5,17 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
 
 #[derive(Serialize, Deserialize, Debug)]
+struct Step {
+    from: String,
+    to: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 enum ClientMessage {
     Join { username: String },
     FindMatch,
-    Move { from: String, to: String },
+    Move { step: Step, fen: String },
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
@@ -136,10 +142,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("🔍 Searching for a match...");
             }
             "move" => {
-                if parts.len() >= 3 {
+                if parts.len() >= 4 {
                     let from = parts[1].to_string();
                     let to = parts[2].to_string();
-                    let message = ClientMessage::Move { from, to };
+                    let fen = parts[3].to_string();
+                    let step: Step = Step { from, to };
+                    let message = ClientMessage::Move { step, fen };
                     send_message(&mut write, &message).await?;
                     println!("♟️  Sent move: {} -> {}", parts[1], parts[2]);
                 } else {
