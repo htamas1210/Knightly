@@ -51,4 +51,38 @@ impl Board {
       }
     }
   }
+  fn add_king_castles(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+    if self.castling_rights & (0b11 << (2 - 2 * self.side_to_move)) == 0 {
+      return;
+    }
+    
+    let offset = 5 + 6 * self.side_to_move as u8;
+    let castle_offset = 2 - 2 * self.side_to_move as u8;
+    let castling_rights = self.castling_rights & 3 << castle_offset;
+    let occupied = self.occupancy[2];
+    let king_sq = self.bitboards[offset as usize].trailing_zeros();
+      
+    let queenside_mask = 0b111 << (king_sq - 3);
+    let kingside_mask = 0b11 << (king_sq + 1);
+
+    if (castling_rights & 1 << castle_offset) != 0
+        && queenside_mask & occupied == 0
+        && !move_mask & 0b11 << (king_sq - 2) == 0
+        && !self.is_square_attacked(king_sq - 2) {
+      buffer.add(BitMove::castle(
+        king_sq as u8,
+        (king_sq - 2) as u8
+      ));
+    }
+    if (castling_rights & 2 << castle_offset) != 0
+        && kingside_mask & occupied == 0
+        && !move_mask & 0b11 << (king_sq + 1) == 0
+        && !self.is_square_attacked(king_sq + 2) {
+      buffer.add(BitMove::castle(
+        king_sq as u8,
+        (king_sq + 2) as u8
+      ));
+    }
+    
+  }
 }

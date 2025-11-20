@@ -71,6 +71,31 @@ impl Board {
   pub fn get_pseudo_queen_moves(&self, sq: u32) -> u64 {
     return self.get_pseudo_bishop_moves(sq) | self.get_pseudo_rook_moves(sq);
   }
+
+  #[inline]
+  pub fn is_square_attacked(&self, king_sq: u32) -> bool {
+    let offset: usize = 6 * self.side_to_move as usize;
+
+    // rook-queen checks (+)
+    let mut threat_mask: u64 = self.get_pseudo_rook_moves(king_sq);
+    let mut attacker_mask: u64 = self.bitboards[10 - offset] | self.bitboards[9 - offset];
+    if threat_mask & attacker_mask != 0 { return true; }
+
+    // bishop-queen checks (x)
+    threat_mask = self.get_pseudo_bishop_moves(king_sq);
+    attacker_mask = self.bitboards[10 - offset] | self.bitboards[8 - offset];
+    if threat_mask & attacker_mask != 0 { return true; }
+
+    // knight checks (L)
+    threat_mask = KNIGHT_ATTACK_MAP[king_sq as usize];
+    attacker_mask = self.bitboards[7 - offset];
+    if threat_mask & attacker_mask != 0 { return true; }
+
+    // pawn checks (v)
+    threat_mask = PAWN_ATTACK_MAP[king_sq as usize][self.side_to_move as usize];
+    attacker_mask = self.bitboards[6 - offset];
+    return threat_mask & attacker_mask != 0;
+  }
 }
 
 #[inline(always)]
