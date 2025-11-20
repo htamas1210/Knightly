@@ -94,6 +94,7 @@ pub static RAY_TABLE: Lazy<[[u64; 8]; 64]> = Lazy::new(|| {
   return table;
 });
 
+// ROOK_MOVE_MASK[<square_index>]
 pub static ROOK_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
   let mut table = [0u64; 64];
 
@@ -105,6 +106,7 @@ pub static ROOK_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
   table
 });
 
+// BISHOP_MOVE_MASK[<square_index>]
 pub static BISHOP_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
   let mut table = [0u64; 64];
 
@@ -113,6 +115,22 @@ pub static BISHOP_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
       table[sq] |= RAY_TABLE[sq][dir];
     }
   }
+  table
+});
+
+pub static KING_SAFETY_ROOK_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
+  let mut table = [0u64; 64];
+
+  for sq in 0..64 {
+    let mut mask = KING_ATTACK_MAP[sq];
+
+    while mask != 0 {
+      let next_sq = mask.trailing_zeros();
+      table[sq] |= ROOK_MOVE_MASK[next_sq as usize];
+      mask &= !(1 << next_sq);
+    }
+  }
+
   table
 });
 
