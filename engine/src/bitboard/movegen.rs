@@ -22,8 +22,8 @@ impl Board {
 
     match check_info.check_count {
       0 => self.collect_all_moves(buffer, temp_buffer),
-      // 1 => self.collect_moves_single_check(),
-      // 2 => self.collect_king_evasion(),
+      1 => self.collect_moves_single_check(buffer, temp_buffer, &check_info),
+      2 => self.collect_king_evasion(buffer, temp_buffer),
       _ => panic!("More than 2 checking pieces found as the same time!")
     }
     return check_info.check_count > 0;
