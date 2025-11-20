@@ -84,7 +84,7 @@ impl MatchmakingSystem {
                     .unwrap_or("Opponent")
             );
             let _ = crate::connection::send_message_to_player_connection(
-                conn_map.get_mut(&white).unwrap(),
+                conn_map.get_mut(&white),
                 &message,
             )
             .await;
@@ -101,7 +101,7 @@ impl MatchmakingSystem {
                     .unwrap_or("Opponent")
             );
             let _ = crate::connection::send_message_to_player_connection(
-                conn_map.get_mut(&black).unwrap(),
+                conn_map.get_mut(&black),
                 &message,
             )
             .await;
