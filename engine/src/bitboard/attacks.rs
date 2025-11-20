@@ -85,7 +85,19 @@ impl Board {
 
     return moves;
   }
+  #[inline]
+  pub fn get_pseudo_rook_moves_ignore_king(&self, sq: u32) -> u64 {
+    let mut moves: u64 = 0u64;
+    let sq = sq as usize;
+    let king = self.bitboards[5 + 6*self.side_to_move as usize];
+    let occupancy = self.occupancy[2] & !king;
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 0);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 2);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 4);
+    moves |= get_raycast_from_square_in_direction(occupancy, sq, 6);
 
+    return moves;
+  }
 
   #[inline]
   pub fn is_square_attacked(&self, king_sq: u32) -> bool {
