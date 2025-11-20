@@ -15,7 +15,7 @@ impl Board {
 
         if (self.side_to_move == 0 && quiets.trailing_zeros() / 8 == 7)
         || (self.side_to_move == 1 && quiets.trailing_zeros() / 8 == 0) {
-          for piece_type in [3, 2, 1, 0] {
+          for piece_type in [4, 3, 2, 1] {
             buffer.add(BitMove::quiet(
               next_sq as u8,
               to_sq as u8,
@@ -50,7 +50,7 @@ impl Board {
 
         if (self.side_to_move == 0 && attacks.trailing_zeros() / 8 == 7)
         || (self.side_to_move == 1 && attacks.trailing_zeros() / 8 == 0) {
-          for piece_type in [3, 2, 1, 0] {
+          for piece_type in [4, 3, 2, 1] {
             buffer.add(BitMove::capture(
               next_sq as u8,
               to_sq as u8,
