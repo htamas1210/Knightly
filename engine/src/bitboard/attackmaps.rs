@@ -105,6 +105,17 @@ pub static ROOK_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
   table
 });
 
+pub static BISHOP_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
+  let mut table = [0u64; 64];
+
+  for sq in 0..64 {
+    for dir in [1, 3, 5, 7] {
+      table[sq] |= RAY_TABLE[sq][dir];
+    }
+  }
+  table
+});
+
 
 
 // <----- TESTS ----->
