@@ -2,6 +2,7 @@ mod pawns;
 mod knights;
 mod bishops;
 mod rooks;
+mod queens;
 
 use super::board::Board;
 use super::movebuffer::MoveBuffer;
