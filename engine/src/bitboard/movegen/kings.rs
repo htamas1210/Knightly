@@ -2,7 +2,7 @@ use super::*;
 
 impl Board {
 
-  fn add_king_moves(&self, capture_buffer: &mut MoveBuffer, quiet_buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_king_moves(&self, capture_buffer: &mut MoveBuffer, quiet_buffer: &mut MoveBuffer, move_mask: u64) {
     let piece_index = 5 + self.side_to_move * 6;
     let mut kings = self.bitboards[piece_index as usize];
     let empty = !self.occupancy[2];
@@ -32,7 +32,7 @@ impl Board {
       }
     }
   }
-  fn add_king_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_king_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
     let offset = 6 * self.side_to_move as usize;
     let mut kings: u64 = self.bitboards[5 + offset];
     let opponents = self.occupancy[1 - self.side_to_move as usize];
@@ -51,7 +51,7 @@ impl Board {
       }
     }
   }
-  fn add_king_castles(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_king_castles(&self, buffer: &mut MoveBuffer, move_mask: u64) {
     if self.castling_rights & (0b11 << (2 - 2 * self.side_to_move)) == 0 {
       return;
     }

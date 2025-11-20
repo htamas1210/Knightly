@@ -2,7 +2,7 @@ use super::*;
 
 impl Board {
 
-  fn add_queen_moves(&self, capture_buffer: &mut MoveBuffer, quiet_buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_queen_moves(&self, capture_buffer: &mut MoveBuffer, quiet_buffer: &mut MoveBuffer, move_mask: u64) {
     let piece_index = 4 + self.side_to_move * 6;
     let mut queens = self.bitboards[piece_index as usize];
     let empty = !self.occupancy[2];
@@ -33,7 +33,7 @@ impl Board {
       }
     }
   }
-  fn add_queen_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_queen_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
     let offset = 6 * self.side_to_move as usize;
     let mut queens: u64 = self.bitboards[4 + offset];
     let opponents = self.occupancy[1 - self.side_to_move as usize];

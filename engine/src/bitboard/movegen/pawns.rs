@@ -2,7 +2,7 @@ use super::*;
 
 impl Board {
 
-  fn add_pawn_quiets(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_pawn_quiets(&self, buffer: &mut MoveBuffer, move_mask: u64) {
     let offset: u8 = self.side_to_move * 6;
     let mut pawns: u64 = self.bitboards[offset as usize];
     while pawns != 0 {
@@ -34,7 +34,7 @@ impl Board {
       }
     }
   }
-  fn add_pawn_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_pawn_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
     let offset = 6 * self.side_to_move as usize;
     let mut pawns: u64 = self.bitboards[offset];
     let opponents = self.occupancy[1 - self.side_to_move as usize];
@@ -69,7 +69,7 @@ impl Board {
       }
     }
   }
-  fn add_pawn_moves(&self, capture_buffer: &mut MoveBuffer, quiet_buffer: &mut MoveBuffer, move_mask: u64) {
+  pub fn add_pawn_moves(&self, capture_buffer: &mut MoveBuffer, quiet_buffer: &mut MoveBuffer, move_mask: u64) {
     self.add_pawn_captures(capture_buffer, move_mask);
     self.add_pawn_quiets(quiet_buffer, move_mask);
   }
