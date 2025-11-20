@@ -94,6 +94,64 @@ pub static RAY_TABLE: Lazy<[[u64; 8]; 64]> = Lazy::new(|| {
   return table;
 });
 
+// ROOK_MOVE_MASK[<square_index>]
+pub static ROOK_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
+  let mut table = [0u64; 64];
+
+  for sq in 0..64 {
+    for dir in [0, 2, 4, 6] {
+      table[sq] |= RAY_TABLE[sq][dir];
+    }
+  }
+  table
+});
+
+// BISHOP_MOVE_MASK[<square_index>]
+pub static BISHOP_MOVE_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
+  let mut table = [0u64; 64];
+
+  for sq in 0..64 {
+    for dir in [1, 3, 5, 7] {
+      table[sq] |= RAY_TABLE[sq][dir];
+    }
+  }
+  table
+});
+
+// KING_SAFETY_ROOK_MASK[<square_index>]
+pub static KING_SAFETY_ROOK_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
+  let mut table = [0u64; 64];
+
+  for sq in 0..64 {
+    let mut mask = KING_ATTACK_MAP[sq];
+
+    while mask != 0 {
+      let next_sq = mask.trailing_zeros();
+      table[sq] |= ROOK_MOVE_MASK[next_sq as usize];
+      mask &= !(1 << next_sq);
+    }
+  }
+
+  table
+});
+
+// KING_SAFETY_BISHOP_MASK[<square_index>]
+pub static KING_SAFETY_BISHOP_MASK: Lazy<[u64; 64]> = Lazy::new(|| {
+  let mut table = [0u64; 64];
+
+  for sq in 0..64 {
+    let mut mask = KING_ATTACK_MAP[sq];
+
+    while mask != 0 {
+      let next_sq = mask.trailing_zeros();
+      table[sq] |= BISHOP_MOVE_MASK[next_sq as usize];
+      mask &= !(1 << next_sq);
+    }
+  }
+
+  table
+});
+
 
 
 // <----- TESTS ----->
