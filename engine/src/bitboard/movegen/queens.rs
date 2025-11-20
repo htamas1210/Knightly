@@ -33,4 +33,23 @@ impl Board {
       }
     }
   }
+  fn add_queen_captures(&self, buffer: &mut MoveBuffer, move_mask: u64) {
+    let offset = 6 * self.side_to_move as usize;
+    let mut queens: u64 = self.bitboards[4 + offset];
+    let opponents = self.occupancy[1 - self.side_to_move as usize];
+    while queens != 0 {
+      let next_sq: u32 = pop_lsb(&mut queens);
+      let mut attacks: u64 = self.get_pseudo_queen_moves(next_sq) & opponents & move_mask;
+      attacks = self.get_pin_masked_moves(attacks, next_sq);
+
+      while attacks != 0 {
+        let to_sq = pop_lsb(&mut attacks);
+        buffer.add(BitMove::capture(
+          next_sq as u8,
+          to_sq as u8,
+          None
+        ));
+      }
+    }
+  }
 }
