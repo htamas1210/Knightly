@@ -56,4 +56,12 @@ impl Board {
     buffer.append(temp_buffer);
     temp_buffer.clear();
   }
+  pub(in super) fn collect_king_evasion(&self, buffer: &mut MoveBuffer, temp_buffer: &mut MoveBuffer) {
+    let safe_squares = self.get_safe_king_squares();
+
+    self.add_king_moves(buffer, temp_buffer, safe_squares);
+
+    buffer.append(&temp_buffer);
+    temp_buffer.clear();
+  }
 }
