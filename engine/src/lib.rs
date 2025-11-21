@@ -40,6 +40,7 @@ pub fn get_board_after_move(fen: &str, chess_move: &ChessMove) -> String {
 mod tests {
   use crate::boardsquare::BoardSquare;
   use crate::piecetype::PieceType::*;
+  use crate::gameend::GameEnd;
 
   use super::*;
 
@@ -63,6 +64,17 @@ mod tests {
       Some(self.cmp(other))
     }
   }
+
+  impl PartialEq for GameEnd {
+    fn eq(&self, other: &Self) -> bool {
+    match (self, other) {
+      (GameEnd::WhiteWon(a), GameEnd::WhiteWon(b)) => a == b,
+      (GameEnd::BlackWon(a), GameEnd::BlackWon(b)) => a == b,
+      (GameEnd::Draw(a),     GameEnd::Draw(b))     => a == b,
+      _ => false,
+    }
+  }
+}
 
   fn canonical(m: &ChessMove) -> (u8, u8, u8) {
     match m {
@@ -159,6 +171,29 @@ mod tests {
       expected_moves[case].sort();
       assert_eq!(generated_moves.len(), expected_moves[case].len());
       assert_eq!(generated_moves, expected_moves[case]);
+    }
+  }
+
+  #[test]
+  fn is_game_over_test() {
+
+    let boards: [&str; 4] = [
+      "2k5/3pn3/2pP4/1R1P3B/1Np5/3RPp2/1B6/6Kb w - - 0 1",
+      "2K3B1/4P3/8/7p/4pPn1/1N1P1p1p/4bp2/2Rk4 b - - 0 1",
+      "6N1/B2PP3/pR1b4/3P2nb/6P1/3P1k2/2p5/4r1K1 w - - 0 1",
+      "3n1K2/p4p2/3k1P2/b1p2P2/P7/8/3p2r1/8 w - - 0 1"
+    ];
+    let expected_results: [Option<GameEnd>; 4] = [
+      None,
+      Some(GameEnd::WhiteWon("".to_string())),
+      Some(GameEnd::BlackWon("".to_string())),
+      Some(GameEnd::Draw("".to_string()))
+    ];
+
+    for case in 0..4 {
+      let fen = boards[case];
+      let actual = is_game_over(fen);
+      assert_eq!(actual, expected_results[case]);
     }
   }
 }
