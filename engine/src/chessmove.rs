@@ -1,5 +1,6 @@
+use crate::{bitboard::{bitmove::{BitMove, BitMoveType}, board::Board}, movetype::MoveType, piecetype};
+
 use super::boardsquare::BoardSquare;
-use super::movetype::MoveType;
 use super::piecetype::PieceType;
 use serde::{Deserialize, Serialize};
 
@@ -91,5 +92,65 @@ impl ChessMove {
             rook_from,
             rook_to
         };
+    }
+
+    pub(in super) fn from_bitmove(bitmove: &BitMove, board: Board) -> Self {
+        match bitmove.move_type() {
+            BitMoveType::Quiet => {
+                let from_square_index = bitmove.from_square();
+                let piece_type = PieceType::from_index(board.piece_board(from_square_index));
+                let from_square = BoardSquare::from_index(from_square_index);
+                let to_square = BoardSquare::from_index(bitmove.to_square());
+                let promotion_piece = match bitmove.promotion_piece() {
+                    Some(piece) => Some(PieceType::from_index(piece)),
+                    None => None
+                };
+
+                return ChessMove::Quiet { piece_type, from_square, to_square, promotion_piece }
+            },
+            BitMoveType::Capture => {
+                let from_square_index = bitmove.from_square();
+                let to_square_index = bitmove.to_square();
+                let piece_type = PieceType::from_index(board.piece_board(from_square_index));
+                let from_square = BoardSquare::from_index(from_square_index);
+                let to_square = BoardSquare::from_index(to_square_index);
+                let captured_piece = PieceType::from_index(board.piece_board(to_square_index));
+                let promotion_piece = match bitmove.promotion_piece() {
+                    Some(piece) => Some(PieceType::from_index(piece)),
+                    None => None
+                };
+
+                return ChessMove::Capture { piece_type, from_square, to_square, captured_piece, promotion_piece }
+            },
+            BitMoveType::Castle => {
+                let from_square_index = bitmove.from_square();
+                let to_square_index = bitmove.to_square();
+                let king_type = PieceType::from_index(board.piece_board(from_square_index));
+                let king_from = BoardSquare::from_index(from_square_index);
+                let king_to = BoardSquare::from_index(to_square_index);
+                let promotion_piece = match bitmove.promotion_piece() {
+                    Some(piece) => Some(PieceType::from_index(piece)),
+                    None => None
+                };
+                let rook_type = if bitmove.from_square() < 32 { PieceType::WhiteRook } else { PieceType::BlackRook };
+                let rook_from_index = if bitmove.to_square() > bitmove.from_square() {
+                    bitmove.from_square() + 3
+                } else {
+                    bitmove.from_square() - 4
+                };
+                let rook_from = BoardSquare::from_index(rook_from_index);
+                let rook_to_index = if bitmove.to_square() > bitmove.from_square() {
+                    bitmove.from_square() + 1
+                } else {
+                    bitmove.from_square() - 1
+                };
+                let rook_to = BoardSquare::from_index(rook_to_index);
+
+                return ChessMove::Castle { king_type, king_from, king_to, rook_type, rook_from, rook_to }
+            },
+            BitMoveType::EnPassant => {
+                panic!("ChessMove::from_bitmove was left unimplemented");
+            }
+        }
     }
 }
