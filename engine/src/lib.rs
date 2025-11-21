@@ -27,8 +27,20 @@ pub fn get_available_moves(fen: &str) -> Vec<ChessMove> {
 }
 
 pub fn is_game_over(fen: &str) -> Option<GameEnd> {
+  let mut board = Board::build(fen);
+  let mut buffer = MoveBuffer::new();
+  let mut temp_buffer = MoveBuffer::new();
+  let in_check = board.collect_moves(&mut buffer, &mut temp_buffer);
+
+  println!("found moves: {}", buffer.count());
   println!("is_game_over answered");
-  return None;
+  if buffer.count() > 0 {
+    return None;
+  }
+  if !in_check {
+    return Some(GameEnd::Draw("".to_string()));
+  }
+  return if board.side_to_move() == 0 { Some(GameEnd::BlackWon("".to_string())) } else { Some(GameEnd::WhiteWon("".to_string())) };
 }
 
 pub fn get_board_after_move(fen: &str, chess_move: &ChessMove) -> String {
@@ -181,7 +193,7 @@ mod tests {
       "2k5/3pn3/2pP4/1R1P3B/1Np5/3RPp2/1B6/6Kb w - - 0 1",
       "2K3B1/4P3/8/7p/4pPn1/1N1P1p1p/4bp2/2Rk4 b - - 0 1",
       "6N1/B2PP3/pR1b4/3P2nb/6P1/3P1k2/2p5/4r1K1 w - - 0 1",
-      "3n1K2/p4p2/3k1P2/b1p2P2/P7/8/3p2r1/8 w - - 0 1"
+      "3n1K2/p2k1p2/5P2/b1p2P2/P7/8/3p2r1/8 w - - 0 1"
     ];
     let expected_results: [Option<GameEnd>; 4] = [
       None,
