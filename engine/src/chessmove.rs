@@ -4,7 +4,7 @@ use super::boardsquare::BoardSquare;
 use super::piecetype::PieceType;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 /*pub struct ChessMove {
     pub move_type: MoveType,
     pub piece_type: PieceType,
@@ -94,7 +94,7 @@ impl ChessMove {
         };
     }
 
-    pub(in super) fn from_bitmove(bitmove: &BitMove, board: Board) -> Self {
+    pub(in super) fn from_bitmove(bitmove: &BitMove, board: &Board) -> Self {
         match bitmove.move_type() {
             BitMoveType::Quiet => {
                 let from_square_index = bitmove.from_square();

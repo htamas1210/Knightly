@@ -7,10 +7,23 @@ pub mod gameend;
 
 use chessmove::ChessMove;
 use gameend::GameEnd;
+use bitboard::board::Board;
+use bitboard::movebuffer::MoveBuffer;
 
 pub fn get_available_moves(fen: &str) -> Vec<ChessMove> {
-  println!("get_available_moves answered");
-  return vec![];
+  let mut board = Board::build(fen);
+  let mut buffer = MoveBuffer::new();
+  let mut temp_buffer = MoveBuffer::new();
+  let mut generated_moves: Vec<ChessMove> = vec![];
+
+  board.collect_moves(&mut buffer, &mut temp_buffer);
+
+  for idx in 0..buffer.count() {
+    generated_moves.push(ChessMove::from_bitmove(buffer.get(idx), &board));
+  }
+
+  println!("get_available_moves resulted in {} moves", generated_moves.len());
+  return generated_moves;
 }
 
 pub fn is_game_over(fen: &str) -> Option<GameEnd> {
@@ -25,6 +38,9 @@ pub fn get_board_after_move(fen: &str, chess_move: &ChessMove) -> String {
 
 #[cfg(test)]
 mod tests {
+  use crate::boardsquare::BoardSquare;
+  use crate::piecetype::PieceType::*;
+
   use super::*;
 
   impl PartialEq for ChessMove {
@@ -61,5 +77,88 @@ mod tests {
     }
   }
 
-  
+  #[test]
+  fn get_available_moves_test() {
+    let boards: [&str; 2] = [
+      "rnbqkbnr/pppppppp/8/1B6/4P3/5P1N/PPPP2PP/RNBQK2R w KQkq e6 0 1",
+      "6Bn/B2Pk3/8/p1r3NK/3p4/b6P/3p2n1/2R5 w - - 0 1"
+    ];
+    let mut expected_moves: Vec<Vec<ChessMove>> = vec![
+      vec![
+        ChessMove::capture(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(3, 6), BlackPawn, None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(0, 1), BoardSquare::from_coord(0, 2), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(0, 1), BoardSquare::from_coord(0, 3), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(1, 1), BoardSquare::from_coord(1, 2), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(1, 1), BoardSquare::from_coord(1, 3), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(2, 1), BoardSquare::from_coord(2, 2), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(2, 1), BoardSquare::from_coord(2, 3), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(3, 1), BoardSquare::from_coord(3, 2), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(3, 1), BoardSquare::from_coord(3, 3), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(4, 3), BoardSquare::from_coord(4, 4), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(5, 2), BoardSquare::from_coord(5, 3), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(6, 1), BoardSquare::from_coord(6, 2), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(6, 1), BoardSquare::from_coord(6, 3), None),
+        ChessMove::quiet(WhiteKnight, BoardSquare::from_coord(1, 0), BoardSquare::from_coord(0, 2), None),
+        ChessMove::quiet(WhiteKnight, BoardSquare::from_coord(1, 0), BoardSquare::from_coord(2, 2), None),
+        ChessMove::quiet(WhiteKnight, BoardSquare::from_coord(7, 2), BoardSquare::from_coord(6, 0), None),
+        ChessMove::quiet(WhiteKnight, BoardSquare::from_coord(7, 2), BoardSquare::from_coord(5, 1), None),
+        ChessMove::quiet(WhiteKnight, BoardSquare::from_coord(7, 2), BoardSquare::from_coord(5, 3), None),
+        ChessMove::quiet(WhiteKnight, BoardSquare::from_coord(7, 2), BoardSquare::from_coord(6, 4), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(5, 0), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(4, 1), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(3, 2), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(2, 3), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(0, 3), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(0, 5), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(1, 4), BoardSquare::from_coord(2, 5), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(7, 0), BoardSquare::from_coord(6, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(7, 0), BoardSquare::from_coord(5, 0), None),
+        ChessMove::quiet(WhiteQueen, BoardSquare::from_coord(3, 0), BoardSquare::from_coord(4, 1), None),
+        ChessMove::quiet(WhiteKing, BoardSquare::from_coord(4, 0), BoardSquare::from_coord(4, 1), None),
+        ChessMove::quiet(WhiteKing, BoardSquare::from_coord(4, 0), BoardSquare::from_coord(5, 1), None),
+        ChessMove::quiet(WhiteKing, BoardSquare::from_coord(4, 0), BoardSquare::from_coord(5, 0), None),
+        ChessMove::castle(WhiteKing, BoardSquare::from_coord(4, 0), BoardSquare::from_coord(6, 0), WhiteRook, BoardSquare::from_coord(7, 0), BoardSquare::from_coord(5, 0))
+      ],
+      vec![
+        ChessMove::capture(WhiteBishop, BoardSquare::from_coord(0, 6), BoardSquare::from_coord(2, 4), BlackRook, None),
+        ChessMove::capture(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(2, 4), BlackRook, None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(7, 2), BoardSquare::from_coord(7, 3), None),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(3, 6), BoardSquare::from_coord(3, 7), Some(WhiteQueen)),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(3, 6), BoardSquare::from_coord(3, 7), Some(WhiteRook)),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(3, 6), BoardSquare::from_coord(3, 7), Some(WhiteBishop)),
+        ChessMove::quiet(WhitePawn, BoardSquare::from_coord(3, 6), BoardSquare::from_coord(3, 7), Some(WhiteKnight)),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(0, 6), BoardSquare::from_coord(1, 5), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(0, 6), BoardSquare::from_coord(1, 7), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(6, 7), BoardSquare::from_coord(7, 6), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(6, 7), BoardSquare::from_coord(5, 6), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(6, 7), BoardSquare::from_coord(4, 5), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(6, 7), BoardSquare::from_coord(3, 4), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(6, 7), BoardSquare::from_coord(2, 3), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(6, 7), BoardSquare::from_coord(1, 2), None),
+        ChessMove::quiet(WhiteBishop, BoardSquare::from_coord(6, 7), BoardSquare::from_coord(0, 1), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(0, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(1, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(3, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(4, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(5, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(6, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(7, 0), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(2, 1), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(2, 2), None),
+        ChessMove::quiet(WhiteRook, BoardSquare::from_coord(2, 0), BoardSquare::from_coord(2, 3), None),
+        ChessMove::quiet(WhiteKing, BoardSquare::from_coord(7, 4), BoardSquare::from_coord(6, 3), None),
+        ChessMove::quiet(WhiteKing, BoardSquare::from_coord(7, 4), BoardSquare::from_coord(7, 5), None)
+      ]
+    ];
+
+    for case in 0..2 {
+
+      let mut generated_moves = get_available_moves(boards[case]);
+      
+      generated_moves.sort();
+      expected_moves[case].sort();
+      assert_eq!(generated_moves.len(), expected_moves[case].len());
+      assert_eq!(generated_moves, expected_moves[case]);
+    }
+  }
 }
