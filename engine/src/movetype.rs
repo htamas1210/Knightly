@@ -11,7 +11,7 @@ pub enum MoveType {
 }
 
 impl MoveType {
-    pub fn from_bitmovetype(move_type: BitMoveType) -> Self {
+    pub(in super) fn from_bitmovetype(move_type: BitMoveType) -> Self {
         return match move_type {
             BitMoveType::Quiet => Self::Quiet,
             BitMoveType::Capture => Self::Capture,
