@@ -128,10 +128,6 @@ impl ChessMove {
                 let king_type = PieceType::from_index(board.piece_board(from_square_index));
                 let king_from = BoardSquare::from_index(from_square_index);
                 let king_to = BoardSquare::from_index(to_square_index);
-                let promotion_piece = match bitmove.promotion_piece() {
-                    Some(piece) => Some(PieceType::from_index(piece)),
-                    None => None
-                };
                 let rook_type = if bitmove.from_square() < 32 { PieceType::WhiteRook } else { PieceType::BlackRook };
                 let rook_from_index = if bitmove.to_square() > bitmove.from_square() {
                     bitmove.from_square() + 3
