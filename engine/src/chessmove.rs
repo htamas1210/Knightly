@@ -1,4 +1,4 @@
-use crate::{bitboard::{bitmove::{BitMove, BitMoveType}, board::Board}, movetype::MoveType, piecetype};
+use crate::{bitboard::{bitmove::{BitMove, BitMoveType}, board::Board}};
 
 use super::boardsquare::BoardSquare;
 use super::piecetype::PieceType;
