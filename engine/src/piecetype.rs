@@ -35,4 +35,20 @@ impl PieceType {
             _ => panic!("invalid piece index! should NEVER appear")
         }
     }
+    pub(in super) fn to_index(&self) -> u8 {
+        return match self {
+            &PieceType::WhitePawn => 0,
+            &PieceType::WhiteKnight => 1,
+            &PieceType::WhiteBishop => 2,
+            &PieceType::WhiteRook => 3,
+            &PieceType::WhiteQueen => 4,
+            &PieceType::WhiteKing => 5,
+            &PieceType::BlackPawn => 6,
+            &PieceType::BlackKnight => 7,
+            &PieceType::BlackBishop => 8,
+            &PieceType::BlackRook => 9,
+            &PieceType::BlackQueen => 10,
+            &PieceType::BlackKing => 11
+        }
+    }
 }
