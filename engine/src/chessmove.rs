@@ -153,4 +153,40 @@ impl ChessMove {
             }
         }
     }
+    pub(in super) fn to_bitmove(&self) -> BitMove {
+        let bitmove = match self {
+            ChessMove::Quiet { piece_type, from_square, to_square, promotion_piece } => {
+                let promotion_piece = match promotion_piece {
+                    Some(piece) => Some(piece.to_index()),
+                    None => None
+                };
+                return BitMove::quiet(
+                    from_square.to_index(),
+                    to_square.to_index(),
+                    promotion_piece
+                );
+            },
+            ChessMove::Capture { piece_type, from_square, to_square, captured_piece, promotion_piece } => {
+                let promotion_piece = match promotion_piece {
+                    Some(piece) => Some(piece.to_index()),
+                    None => None
+                };
+                return BitMove::capture(
+                    from_square.to_index(),
+                    to_square.to_index(),
+                    promotion_piece
+                );
+            },
+            ChessMove::Castle { king_type, king_from, king_to, rook_type, rook_from, rook_to } => {
+                return BitMove::castle(
+                    king_from.to_index(),
+                    king_to.to_index()
+                );
+            },
+            ChessMove::EnPassant { pawn_type, from_square, to_square, captured_piece, captured_from } => {
+                panic!("ChessMove::to_bitmove was left unimplemented");
+            }
+        };
+        return bitmove;
+    }
 }
