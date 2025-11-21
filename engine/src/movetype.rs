@@ -20,4 +20,12 @@ impl MoveType {
             _ => panic!("invalid move_type index! should NEVER appear")
         }
     }
+    pub(in super) fn to_bitmoveType(&self) -> BitMoveType {
+        return match self {
+            &MoveType::Quiet => BitMoveType::Quiet,
+            &MoveType::Capture => BitMoveType::Capture,
+            &MoveType::Castle => BitMoveType::Castle,
+            &MoveType::EnPassant => BitMoveType::EnPassant
+        };
+    }
 }
