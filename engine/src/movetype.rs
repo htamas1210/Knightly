@@ -9,3 +9,14 @@ pub enum MoveType {
     EnPassant,
 }
 
+impl MoveType {
+    pub fn from_index(idx: u8) -> Self {
+        return match idx {
+            0 => Self::Quiet,
+            1 => Self::Capture,
+            2 => Self::Castle,
+            3 => Self::EnPassant,
+            _ => panic!("invalid move_type index! should NEVER appear")
+        }
+    }
+}
