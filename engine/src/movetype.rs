@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use serde::Serialize;
+use super::bitboard::bitmove::BitMoveType;
 
 #[derive(Serialize, Deserialize)]
 pub enum MoveType {
@@ -10,12 +11,12 @@ pub enum MoveType {
 }
 
 impl MoveType {
-    pub fn from_index(idx: u8) -> Self {
-        return match idx {
-            0 => Self::Quiet,
-            1 => Self::Capture,
-            2 => Self::Castle,
-            3 => Self::EnPassant,
+    pub fn from_bitmovetype(move_type: BitMoveType) -> Self {
+        return match move_type {
+            BitMoveType::Quiet => Self::Quiet,
+            BitMoveType::Capture => Self::Capture,
+            BitMoveType::Castle => Self::Castle,
+            BitMoveType::EnPassant => Self::EnPassant,
             _ => panic!("invalid move_type index! should NEVER appear")
         }
     }
