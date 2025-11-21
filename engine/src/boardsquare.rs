@@ -27,5 +27,19 @@ impl BoardSquare {
         }
         return Self { x: x, y: y };
     }
+
+    pub(in super) fn from_index(idx: u8) -> Self {
+        let file = idx % 8;
+        let rank = idx / 8;
+        
+        #[cfg(debug_assertions)]
+        {
+            if !(0..8).contains(&rank) {
+                println!("Warning: internal engine issue, given index is not on the board!");
+            }
+        }
+
+        return Self {x: file as usize, y: rank as usize};
+    }
 }
 
