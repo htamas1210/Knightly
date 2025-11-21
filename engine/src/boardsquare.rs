@@ -41,5 +41,8 @@ impl BoardSquare {
 
         return Self {x: file as usize, y: rank as usize};
     }
+    pub(in super) fn to_index(&self) -> u8 {
+        return (8 * self.y + self.x) as u8;
+    }
 }
 
