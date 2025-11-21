@@ -32,7 +32,6 @@ pub fn is_game_over(fen: &str) -> Option<GameEnd> {
   let mut temp_buffer = MoveBuffer::new();
   let in_check = board.collect_moves(&mut buffer, &mut temp_buffer);
 
-  println!("found moves: {}", buffer.count());
   println!("is_game_over answered");
   if buffer.count() > 0 {
     return None;
