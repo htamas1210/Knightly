@@ -1,17 +1,27 @@
+use engine::gameend::GameEnd;
+use engine::{boardsquare::BoardSquare, chessmove::ChessMove, piecetype::PieceType};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
+struct Step {
+    from: String,
+    to: String,
+}
+
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum ClientMessage {
     Join { username: String },
     FindMatch,
-    Move { from: String, to: String },
+    Move { step: ChessMove, fen: String },
     Resign,
     Chat { text: String },
+    RequestLegalMoves { fen: String },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,6 +33,21 @@ struct ServerMessage {
     opponent: Option<String>,
     color: Option<String>,
     reason: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ServerMessage2 {
+    GameEnd {
+        winner: GameEnd,
+    },
+    UIUpdate {
+        fen: String,
+    },
+    MatchFound {
+        match_id: Uuid,
+        color: String,
+        opponent_name: String,
+    },
 }
 
 #[tokio::main]
@@ -60,15 +85,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("\nServer: {}", text);
 
                         // Try to parse as structured message
-                        if let Ok(parsed) = serde_json::from_str::<ServerMessage>(text) {
-                            match parsed.message_type.as_str() {
-                                "welcome" => {
-                                    if let Some(player_id) = parsed.player_id {
-                                        println!("Welcome! Your player ID: {}", player_id);
-                                    }
+                        if let Ok(parsed) = serde_json::from_str::<ServerMessage2>(text) {
+                            match parsed {
+                                ServerMessage2::MatchFound {
+                                    match_id,
+                                    color,
+                                    opponent_name,
+                                } => {
+                                    println!(
+                                        "opponent: {}, match_id: {}, color: {}",
+                                        opponent_name, match_id, color
+                                    );
                                 }
                                 _ => {
-                                    println!("cucc: {:?}", parsed);
+                                    println!("cucc");
                                 }
                             }
                         }
@@ -128,11 +158,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "move" => {
                 if parts.len() >= 3 {
-                    let from = parts[1].to_string();
-                    let to = parts[2].to_string();
-                    let message = ClientMessage::Move { from, to };
+                    //let from = parts[1].to_string();
+                    //let to = parts[2].to_string();
+                    let fen = parts[1].to_string();
+
+                    let step = ChessMove::quiet(
+                        engine::piecetype::PieceType::WhiteBishop,
+                        BoardSquare::new(),
+                        BoardSquare { x: 1, y: 1 },
+                        None,
+                    );
+
+                    let message = ClientMessage::Move { step, fen };
                     send_message(&mut write, &message).await?;
-                    println!("♟️  Sent move: {} -> {}", parts[1], parts[2]);
+                    //println!("♟️  Sent move: {} -> {}", parts[1], parts[2]);
                 } else {
                     println!("Usage: move <from> <to> (e.g., move e2 e4)");
                 }
@@ -153,6 +192,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "help" => {
                 print_help();
+            }
+            "requestmoves" => {
+                if parts.len() >= 2 {
+                    let fen = parts[1..].join(" ");
+                    let message = ClientMessage::RequestLegalMoves { fen };
+                    send_message(&mut write, &message).await?;
+                }
             }
             _ => {
                 println!(
@@ -191,5 +237,6 @@ fn print_help() {
     println!("  resign             - Resign from current game");
     println!("  help               - Show this help");
     println!("  quit               - Exit the client");
+    println!("  requestmoves       - Request the legal moves");
     println!();
 }

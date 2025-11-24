@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub enum GameEnd {
-  WhiteWon(String),
-  BlackWon(String),
-  Draw(String)
+    WhiteWon(String),
+    BlackWon(String),
+    Draw(String),
 }
+
