@@ -4,6 +4,7 @@ use engine::chessmove::ChessMove;
 use engine::gameend::GameEnd::{self, *};
 use engine::{get_available_moves, is_game_over};
 use futures_util::{SinkExt, StreamExt};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::char::from_u32_unchecked;
 use std::collections::{HashMap, VecDeque};
@@ -25,14 +26,17 @@ pub async fn clean_up_match(matches: &MatchMap, match_id: &Uuid) {
 
 // Helper functions to create new instances
 pub fn new_connection_map() -> ConnectionMap {
+    warn!("Created new connection map");
     Arc::new(Mutex::new(HashMap::new()))
 }
 
 pub fn new_match_map() -> MatchMap {
+    warn!("Created new match map");
     Arc::new(Mutex::new(HashMap::new()))
 }
 
 pub fn new_waiting_queue() -> WaitingQueue {
+    warn!("Created new waiting queue");
     Arc::new(Mutex::new(VecDeque::new()))
 }
 
@@ -107,11 +111,11 @@ pub async fn send_message_to_player_connection(
 ) -> Result<(), tokio_tungstenite::tungstenite::Error> {
     match connection {
         Some(connection) => {
-            println!("sending message to: {}", connection.id);
+            info!("sending message to: {}", connection.id);
             connection.tx.send(Message::Text(message.to_string())).await
         }
         None => {
-            eprintln!("No connection provided");
+            error!("No connection provided");
             Err(tokio_tungstenite::tungstenite::Error::ConnectionClosed)
         }
     }
@@ -123,7 +127,7 @@ pub async fn broadcast_to_all(connections: &ConnectionMap, message: &str) {
 
     for (id, connection) in connections_lock.iter_mut() {
         if let Err(e) = connection.tx.send(Message::Text(message.to_string())).await {
-            eprintln!("Failed to send to {}: {}", id, e);
+            error!("Failed to send to {}: {}", id, e);
             dead_connections.push(*id);
         }
     }
@@ -140,6 +144,7 @@ pub async fn broadcast_to_match(
     match_id: Uuid,
     message: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    info!("Broadcasting data to match: {}", &match_id);
     let matches_lock = matches.lock().await;
     if let Some(game_match) = matches_lock.get(&match_id) {
         send_message_to_player_connection(
@@ -167,6 +172,7 @@ pub async fn handle_connection(
 
     let ws_stream = accept_async(stream).await?;
     let (write, mut read) = ws_stream.split();
+    warn!("Accepted new connection");
 
     let player_id = Uuid::new_v4();
 
@@ -184,13 +190,13 @@ pub async fn handle_connection(
         );
     }
 
-    println!("New connection: {}", player_id);
+    info!("id: {}", &player_id);
 
     // Message processing loop
     while let Some(Ok(message)) = read.next().await {
         if message.is_text() {
             let text = message.to_text()?;
-            println!("Received from {}: {}", player_id, text);
+            info!("Received from {}: {}", player_id, text);
 
             let client_data: ClientEvent = serde_json::from_str(text)
                 .expect("Failed to convert data into json at handle_connection");
@@ -200,7 +206,8 @@ pub async fn handle_connection(
                     {
                         let mut conn_map = connections.lock().await;
                         let player = conn_map.get_mut(&player_id).unwrap();
-                        player.username = Some(username);
+                        player.username = Some(username.clone());
+                        info!("player: {}, set username: {}", &player_id, username);
                     }
 
                     //respone to client
@@ -216,8 +223,8 @@ pub async fn handle_connection(
                 FindMatch => {
                     let mut wait_queue = waiting_queue.lock().await;
                     wait_queue.push_back(player_id.clone());
-                    println!("Appended {} to the waiting queue", player_id);
-                    println!("queue {:?}", wait_queue);
+                    info!("Appended {} to the waiting queue", player_id);
+                    info!("queue {:?}", wait_queue);
                 }
                 Move { step } => {
                     let match_id = connections
@@ -229,6 +236,7 @@ pub async fn handle_connection(
                         .unwrap();
 
                     {
+                        info!("updating board state in match: {}", &match_id);
                         let mut matches = matches.lock().await;
                         matches.get_mut(&match_id).unwrap().board_state =
                             engine::get_board_after_move(
@@ -261,6 +269,7 @@ pub async fn handle_connection(
 
                         match is_game_end {
                             Some(res) => {
+                                warn!("A player won the match: {}", &match_id);
                                 let message = ServerMessage2::GameEnd { winner: res };
                                 let _ = broadcast_to_match(
                                     &connections,
@@ -272,21 +281,23 @@ pub async fn handle_connection(
                                 clean_up_match(&matches, &match_id);
                             }
                             None => {
-                                println!("No winner match continues.")
+                                info!("No winner match continues. Id: {}", &match_id);
                             }
                         }
                     }
                 }
                 RequestLegalMoves { fen } => {
+                    info!("Requesting legal moves player: {}", &player_id);
                     let moves = get_available_moves(&fen);
                     let _ = send_message_to_player_connection(
                         connections.lock().await.get_mut(&player_id),
                         &serde_json::to_string(&moves).unwrap(),
                     )
                     .await;
-                    println!("Sent moves to player: {}", player_id);
+                    info!("Sent moves to player: {}", player_id);
                 }
                 Resign => {
+                    warn!("Resigned!");
                     let (fuck, fuck_id): (ServerMessage2, &Uuid) = {
                         let matches = matches.lock().await;
 
@@ -347,7 +358,7 @@ pub async fn handle_connection(
                     clean_up_match(&matches, fuck_id);
                 }
                 _ => {
-                    println!("Not known client event");
+                    warn!("Not known client event");
                 }
             }
         }
@@ -355,7 +366,7 @@ pub async fn handle_connection(
 
     // Cleanup on disconnect
     cleanup_player(player_id, &connections, &matches, &waiting_queue).await;
-    println!("Connection {} closed", player_id);
+    warn!("Connection {} closed", player_id);
 
     Ok(())
 }
@@ -372,7 +383,7 @@ async fn cleanup_player(
     // Remove from connections
     connections.lock().await.remove(&player_id);
 
-    println!("Cleaned up player {}", player_id);
+    warn!("Cleaned up player {}", player_id);
 }
 
 #[cfg(test)]

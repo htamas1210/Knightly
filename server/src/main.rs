@@ -1,12 +1,18 @@
 mod connection;
 mod matchmaking;
+use env_logger::{Env, Logger};
+use log::{error, info, warn};
+use std::env;
 use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let env = Env::default().filter_or("MY_LOG_LEVEL", "INFO");
+    env_logger::init_from_env(env);
+
     let address = "0.0.0.0:9001";
     let listener = TcpListener::bind(address).await?;
-    println!("Server running on ws://{}", address);
+    info!("Server running on ws://{}", address);
 
     // Shared state initialization using the new helper functions
     let connections = connection::new_connection_map();
@@ -33,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
             if let Err(e) =
                 connection::handle_connection(stream, connections, matches, waiting_queue).await
             {
-                eprintln!("Connection error: {}", e);
+                error!("Connection error: {}", e);
             }
         });
     }

@@ -1,5 +1,6 @@
 use crate::connection::ServerMessage2;
-use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue};
+use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue, broadcast_to_match};
+use log::{error, info, warn};
 use rand::random;
 use uuid::Uuid;
 
@@ -30,16 +31,21 @@ impl MatchmakingSystem {
     }
 
     async fn try_create_match(&self) {
+        info!("Checking for new matches!");
         let mut queue = self.waiting_queue.lock().await;
 
         while queue.len() >= 2 {
             let player1 = queue.pop_front().unwrap();
             let player2 = queue.pop_front().unwrap();
 
+            info!("Creating new match. Players: {}, {}", &player1, &player2);
+
             let match_id = Uuid::new_v4();
             let (white_player, black_player) = if random::<bool>() {
+                info!("player1 is white, player2 is black");
                 (player1, player2)
             } else {
+                info!("player2 is white, player1 is black");
                 (player2, player1)
             };
 
@@ -51,6 +57,8 @@ impl MatchmakingSystem {
                 move_history: Vec::new(),
             };
 
+            info!("Match id: {}", &game_match.id);
+
             // Store the match
             self.matches.lock().await.insert(match_id, game_match);
 
@@ -59,14 +67,18 @@ impl MatchmakingSystem {
                 let mut conn_map = self.connections.lock().await;
                 if let Some(player) = conn_map.get_mut(&white_player) {
                     player.current_match = Some(match_id);
+                } else {
+                    error!("Could not store match id for white player");
                 }
                 if let Some(player) = conn_map.get_mut(&black_player) {
                     player.current_match = Some(match_id);
+                } else {
+                    error!("Could not store match id for black player");
                 }
             }
 
             // Notify players
-            println!(
+            info!(
                 "Notifying player for a match: {:?} | {:?}",
                 white_player, black_player
             );
@@ -116,7 +128,7 @@ impl MatchmakingSystem {
             .await;
         }
 
-        println!("Match created: {} (white) vs {} (black)", white, black);
+        info!("Match created: {} (white) vs {} (black)", white, black);
     }
 }
 
