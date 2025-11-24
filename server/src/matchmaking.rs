@@ -1,5 +1,5 @@
 use crate::connection::ServerMessage2;
-use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue, broadcast_to_match};
+use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue};
 use rand::random;
 use uuid::Uuid;
 
@@ -23,6 +23,10 @@ impl MatchmakingSystem {
             self.try_create_match().await;
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
+    }
+
+    pub async fn clean_up(&self, match_id: Uuid) {
+        self.matches.lock().await.remove(&match_id);
     }
 
     async fn try_create_match(&self) {
