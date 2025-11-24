@@ -1,10 +1,12 @@
 use crate::connection::ClientEvent::*;
+use crate::matchmaking;
 use engine::chessmove::ChessMove;
 use engine::gameend::GameEnd::{self, *};
 use engine::{get_available_moves, is_game_over};
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
+use std::char::from_u32_unchecked;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -17,6 +19,10 @@ pub type Tx = futures_util::stream::SplitSink<WebSocketStream<TcpStream>, Messag
 pub type ConnectionMap = Arc<Mutex<HashMap<Uuid, PlayerConnection>>>;
 pub type MatchMap = Arc<Mutex<HashMap<Uuid, GameMatch>>>;
 pub type WaitingQueue = Arc<Mutex<VecDeque<Uuid>>>;
+
+pub async fn clean_up_match(matches: &MatchMap, match_id: &Uuid) {
+    matches.lock().await.remove(&match_id);
+}
 
 // Helper functions to create new instances
 pub fn new_connection_map() -> ConnectionMap {
@@ -65,6 +71,9 @@ pub enum ServerMessage2 {
         color: String,
         opponent_name: String,
     },
+    Ok {
+        response: Result<(), String>,
+    },
 }
 
 #[derive(Serialize, Deserialize)]
@@ -76,11 +85,6 @@ enum ClientEvent {
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EventResponse {
-    pub response: Result<(), String>,
 }
 
 #[derive(Debug)]
@@ -207,12 +211,7 @@ pub async fn handle_connection(
                     }
 
                     //respone to client
-                    // TODO: switch over to server message 2?
-                    let response: EventResponse = EventResponse {
-                        response: core::result::Result::Ok(()),
-                    };
-
-                    info!("response: {:?}", response);
+                    let response = ServerMessage2::Ok { response: Ok(()) };
 
                     let mut conn_map = connections.lock().await;
                     let _ = send_message_to_player_connection(
@@ -264,9 +263,11 @@ pub async fn handle_connection(
                     .await;
 
                     {
-                        match engine::is_game_over(
+                        let is_game_end = engine::is_game_over(
                             &matches.lock().await.get(&match_id).unwrap().board_state,
-                        ) {
+                        );
+
+                        match is_game_end {
                             Some(res) => {
                                 warn!("A player won the match: {}", &match_id);
                                 let message = ServerMessage2::GameEnd { winner: res };
@@ -277,6 +278,7 @@ pub async fn handle_connection(
                                     &serde_json::to_string(&message).unwrap(),
                                 )
                                 .await;
+                                clean_up_match(&matches, &match_id);
                             }
                             None => {
                                 info!("No winner match continues. Id: {}", &match_id);
@@ -295,8 +297,65 @@ pub async fn handle_connection(
                     info!("Sent moves to player: {}", player_id);
                 }
                 Resign => {
-                    // TODO: set game over and turn on game end ui, then delete the match
                     warn!("Resigned!");
+                    let (fuck, fuck_id): (ServerMessage2, &Uuid) = {
+                        let matches = matches.lock().await;
+
+                        let curr_match = matches
+                            .get(
+                                &connections
+                                    .lock()
+                                    .await
+                                    .get(&player_id)
+                                    .unwrap()
+                                    .current_match
+                                    .unwrap(),
+                            )
+                            .unwrap();
+
+                        if player_id == curr_match.player_white {
+                            (
+                                ServerMessage2::GameEnd {
+                                    winner: GameEnd::BlackWon("Resigned".to_string()),
+                                },
+                                &connections
+                                    .lock()
+                                    .await
+                                    .get(&player_id)
+                                    .unwrap()
+                                    .current_match
+                                    .unwrap(),
+                            )
+                        } else {
+                            (
+                                ServerMessage2::GameEnd {
+                                    winner: GameEnd::WhiteWon("Resigned".to_string()),
+                                },
+                                &connections
+                                    .lock()
+                                    .await
+                                    .get(&player_id)
+                                    .unwrap()
+                                    .current_match
+                                    .unwrap(),
+                            )
+                        }
+                    };
+
+                    broadcast_to_match(
+                        &connections,
+                        &matches,
+                        connections
+                            .lock()
+                            .await
+                            .get(&player_id)
+                            .unwrap()
+                            .current_match
+                            .unwrap(),
+                        &serde_json::to_string(&fuck).unwrap(),
+                    )
+                    .await;
+                    clean_up_match(&matches, fuck_id);
                 }
                 _ => {
                     warn!("Not known client event");

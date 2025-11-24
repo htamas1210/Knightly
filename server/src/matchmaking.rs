@@ -26,6 +26,10 @@ impl MatchmakingSystem {
         }
     }
 
+    pub async fn clean_up(&self, match_id: Uuid) {
+        self.matches.lock().await.remove(&match_id);
+    }
+
     async fn try_create_match(&self) {
         info!("Checking for new matches!");
         let mut queue = self.waiting_queue.lock().await;
