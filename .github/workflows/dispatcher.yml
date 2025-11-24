@@ -77,7 +77,6 @@ jobs:
 
 
   release:
-    needs: test-data-upload
     if: github.ref == 'refs/heads/master'
     uses: ./.github/workflows/release.yml
     secrets: inherit
