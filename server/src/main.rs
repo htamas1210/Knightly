@@ -1,6 +1,5 @@
 mod connection;
 mod matchmaking;
-use dotenvy::dotenv;
 use env_logger::{Env, Logger};
 use log::{error, info, warn};
 use std::env;
