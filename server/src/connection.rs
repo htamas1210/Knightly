@@ -1,6 +1,7 @@
 use crate::connection::ClientEvent::*;
 use engine::chessmove::ChessMove;
-use engine::get_available_moves;
+use engine::gameend::GameEnd::{self, *};
+use engine::{get_available_moves, is_game_over};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -35,7 +36,7 @@ pub struct Step {
     pub to: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+/*#[derive(Serialize, Deserialize, Debug)]
 struct ServerMessage {
     #[serde(rename = "type")]
     message_type: String,
@@ -45,6 +46,21 @@ struct ServerMessage {
     color: Option<String>,
     reason: Option<String>,
     response: Option<String>,
+}*/
+
+#[derive(Serialize, Deserialize)]
+pub enum ServerMessage2 {
+    GameEnd {
+        winner: GameEnd,
+    },
+    UIUpdate {
+        fen: String,
+    },
+    MatchFound {
+        match_id: Uuid,
+        color: String,
+        opponent_name: String,
+    },
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,7 +68,7 @@ struct ServerMessage {
 enum ClientEvent {
     Join { username: String },
     FindMatch,
-    Move { step: ChessMove, fen: String },
+    Move { step: ChessMove },
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
@@ -205,7 +221,7 @@ pub async fn handle_connection(
                     println!("Appended {} to the waiting queue", player_id);
                     println!("queue {:?}", wait_queue);
                 }
-                Move { step, fen } => {
+                Move { step } => {
                     let match_id = connections
                         .lock()
                         .await
@@ -214,25 +230,22 @@ pub async fn handle_connection(
                         .current_match
                         .unwrap();
 
-                    // TODO: discuss if the fen sent by the client is before or after the move
-                    let new_fen = engine::get_board_after_move(&fen, &step);
-
-                    let message: ServerMessage = ServerMessage {
-                        message_type: String::from("move"),
-                        player_id: (Some(player_id.clone())),
-                        match_id: (Some(match_id.clone())),
-                        opponent: (None),
-                        color: (None),
-                        reason: (Some(String::from(
-                            "after player stepped we update the position for opponent board, and move history",
-                        ))),
-                        response: (Some(String::from(
-                            &serde_json::to_string(&Move {
-                                step: step,
-                                fen: fen,
-                            })
-                            .unwrap(),
-                        ))),
+                    {
+                        let mut matches = matches.lock().await;
+                        matches.get_mut(&match_id).unwrap().board_state =
+                            engine::get_board_after_move(
+                                &matches.get(&match_id).unwrap().board_state,
+                                &step,
+                            );
+                    }
+                    let message = ServerMessage2::UIUpdate {
+                        fen: matches
+                            .lock()
+                            .await
+                            .get(&match_id)
+                            .unwrap()
+                            .board_state
+                            .clone(),
                     };
 
                     let _ = broadcast_to_match(
@@ -243,7 +256,25 @@ pub async fn handle_connection(
                     )
                     .await;
 
-                    let res = engine::is_game_over(&new_fen); // TODO: discuss how to handle this
+                    {
+                        match engine::is_game_over(
+                            &matches.lock().await.get(&match_id).unwrap().board_state,
+                        ) {
+                            Some(res) => {
+                                let message = ServerMessage2::GameEnd { winner: res };
+                                let _ = broadcast_to_match(
+                                    &connections,
+                                    &matches,
+                                    match_id,
+                                    &serde_json::to_string(&message).unwrap(),
+                                )
+                                .await;
+                            }
+                            None => {
+                                println!("No winner match continues.")
+                            }
+                        }
+                    }
                 }
                 RequestLegalMoves { fen } => {
                     let moves = get_available_moves(&fen);
@@ -291,6 +322,7 @@ async fn cleanup_player(
 mod tests {
     use super::*;
     use uuid::Uuid;
+
     #[tokio::test]
     async fn test_send_message_to_nonexistent_player() {
         let connections = new_connection_map();
@@ -300,7 +332,7 @@ mod tests {
         let result = send_message_to_player_connection(None, "test message").await;
 
         assert!(result.is_err(), "Should return error for None connection");
-        println!("✅ Test passed: Handles None connection correctly");
+        println!("Test passed: Handles None connection correctly");
 
         // Test 2: Try to get non-existent player from map
         let mut conn = connections.lock().await;
@@ -313,7 +345,7 @@ mod tests {
             result2.is_err(),
             "Should return error for non-existent player"
         );
-        println!("✅ Test passed: Handles non-existent player in map correctly");
+        println!("Test passed: Handles non-existent player in map correctly");
     }
 
     #[tokio::test]

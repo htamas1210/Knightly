@@ -1,9 +1,11 @@
+use engine::gameend::GameEnd;
 use engine::{boardsquare::BoardSquare, chessmove::ChessMove, piecetype::PieceType};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Step {
@@ -31,6 +33,21 @@ struct ServerMessage {
     opponent: Option<String>,
     color: Option<String>,
     reason: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ServerMessage2 {
+    GameEnd {
+        winner: GameEnd,
+    },
+    UIUpdate {
+        fen: String,
+    },
+    MatchFound {
+        match_id: Uuid,
+        color: String,
+        opponent_name: String,
+    },
 }
 
 #[tokio::main]
@@ -68,23 +85,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         println!("\nServer: {}", text);
 
                         // Try to parse as structured message
-                        if let Ok(parsed) = serde_json::from_str::<ServerMessage>(text) {
-                            match parsed.message_type.as_str() {
-                                "welcome" => {
-                                    if let Some(player_id) = parsed.player_id {
-                                        println!("Welcome! Your player ID: {}", player_id);
-                                    }
-                                }
-                                "match_found" => {
+                        if let Ok(parsed) = serde_json::from_str::<ServerMessage2>(text) {
+                            match parsed {
+                                ServerMessage2::MatchFound {
+                                    match_id,
+                                    color,
+                                    opponent_name,
+                                } => {
                                     println!(
                                         "opponent: {}, match_id: {}, color: {}",
-                                        parsed.opponent.unwrap(),
-                                        parsed.match_id.unwrap(),
-                                        parsed.color.unwrap()
+                                        opponent_name, match_id, color
                                     );
                                 }
                                 _ => {
-                                    println!("cucc: {:?}", parsed);
+                                    println!("cucc");
                                 }
                             }
                         }

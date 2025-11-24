@@ -1,3 +1,4 @@
+use crate::connection::ServerMessage2;
 use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue, broadcast_to_match};
 use rand::random;
 use uuid::Uuid;
@@ -75,34 +76,38 @@ impl MatchmakingSystem {
 
         // Notify white player
         if let Some(_) = conn_map.get(&white) {
-            let message = format!(
-                r#"{{"type": "match_found", "match_id": "{}", "opponent": "{}", "color": "white"}}"#,
-                match_id,
-                conn_map
+            let message = ServerMessage2::MatchFound {
+                match_id: match_id.clone(),
+                color: String::from("white"),
+                opponent_name: conn_map
                     .get(&white)
                     .and_then(|c| c.username.as_deref())
                     .unwrap_or("Opponent")
-            );
+                    .to_string(),
+            };
+
             let _ = crate::connection::send_message_to_player_connection(
                 conn_map.get_mut(&white),
-                &message,
+                &serde_json::to_string(&message).unwrap(),
             )
             .await;
         }
 
         // Notify black player
         if let Some(_) = conn_map.get(&black) {
-            let message = format!(
-                r#"{{"type": "match_found", "match_id": "{}", "opponent": "{}", "color": "black"}}"#,
-                match_id,
-                conn_map
+            let message = ServerMessage2::MatchFound {
+                match_id: match_id.clone(),
+                color: String::from("black"),
+                opponent_name: conn_map
                     .get(&black)
                     .and_then(|c| c.username.as_deref())
                     .unwrap_or("Opponent")
-            );
+                    .to_string(),
+            };
+
             let _ = crate::connection::send_message_to_player_connection(
-                conn_map.get_mut(&black),
-                &message,
+                conn_map.get_mut(&white),
+                &serde_json::to_string(&message).unwrap(),
             )
             .await;
         }
