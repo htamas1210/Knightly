@@ -1,3 +1,4 @@
+use crate::connection::ServerMessage2;
 use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue};
 use rand::random;
 use uuid::Uuid;
@@ -20,8 +21,12 @@ impl MatchmakingSystem {
     pub async fn run(&self) {
         loop {
             self.try_create_match().await;
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
+    }
+
+    pub async fn clean_up(&self, match_id: Uuid) {
+        self.matches.lock().await.remove(&match_id);
     }
 
     async fn try_create_match(&self) {
@@ -61,42 +66,54 @@ impl MatchmakingSystem {
             }
 
             // Notify players
+            println!(
+                "Notifying player for a match: {:?} | {:?}",
+                white_player, black_player
+            );
             self.notify_players(white_player, black_player, match_id)
                 .await;
         }
     }
 
     async fn notify_players(&self, white: Uuid, black: Uuid, match_id: Uuid) {
-        let conn_map = self.connections.lock().await;
-
-        // Get opponent names
-        let white_name = conn_map
-            .get(&black)
-            .and_then(|c| c.username.as_deref())
-            .unwrap_or("Opponent");
-        let black_name = conn_map
-            .get(&white)
-            .and_then(|c| c.username.as_deref())
-            .unwrap_or("Opponent");
+        let mut conn_map = self.connections.lock().await;
 
         // Notify white player
         if let Some(_) = conn_map.get(&white) {
-            let message = format!(
-                r#"{{"type": "match_found", "match_id": "{}", "opponent": "{}", "color": "white"}}"#,
-                match_id, black_name
-            );
-            let _ =
-                crate::connection::send_message_to_player(&self.connections, white, &message).await;
+            let message = ServerMessage2::MatchFound {
+                match_id: match_id.clone(),
+                color: String::from("white"),
+                opponent_name: conn_map
+                    .get(&white)
+                    .and_then(|c| c.username.as_deref())
+                    .unwrap_or("Opponent")
+                    .to_string(),
+            };
+
+            let _ = crate::connection::send_message_to_player_connection(
+                conn_map.get_mut(&white),
+                &serde_json::to_string(&message).unwrap(),
+            )
+            .await;
         }
 
         // Notify black player
         if let Some(_) = conn_map.get(&black) {
-            let message = format!(
-                r#"{{"type": "match_found", "match_id": "{}", "opponent": "{}", "color": "black"}}"#,
-                match_id, white_name
-            );
-            let _ =
-                crate::connection::send_message_to_player(&self.connections, black, &message).await;
+            let message = ServerMessage2::MatchFound {
+                match_id: match_id.clone(),
+                color: String::from("black"),
+                opponent_name: conn_map
+                    .get(&black)
+                    .and_then(|c| c.username.as_deref())
+                    .unwrap_or("Opponent")
+                    .to_string(),
+            };
+
+            let _ = crate::connection::send_message_to_player_connection(
+                conn_map.get_mut(&white),
+                &serde_json::to_string(&message).unwrap(),
+            )
+            .await;
         }
 
         println!("Match created: {} (white) vs {} (black)", white, black);

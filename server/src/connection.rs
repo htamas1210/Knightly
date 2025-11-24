@@ -1,7 +1,11 @@
 use crate::connection::ClientEvent::*;
-use engine::get_available_moves;
+use crate::matchmaking;
+use engine::chessmove::ChessMove;
+use engine::gameend::GameEnd::{self, *};
+use engine::{get_available_moves, is_game_over};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
+use std::char::from_u32_unchecked;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -14,6 +18,10 @@ pub type Tx = futures_util::stream::SplitSink<WebSocketStream<TcpStream>, Messag
 pub type ConnectionMap = Arc<Mutex<HashMap<Uuid, PlayerConnection>>>;
 pub type MatchMap = Arc<Mutex<HashMap<Uuid, GameMatch>>>;
 pub type WaitingQueue = Arc<Mutex<VecDeque<Uuid>>>;
+
+pub async fn clean_up_match(matches: &MatchMap, match_id: &Uuid) {
+    matches.lock().await.remove(&match_id);
+}
 
 // Helper functions to create new instances
 pub fn new_connection_map() -> ConnectionMap {
@@ -28,26 +36,51 @@ pub fn new_waiting_queue() -> WaitingQueue {
     Arc::new(Mutex::new(VecDeque::new()))
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Step {
     pub from: String,
     pub to: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+/*#[derive(Serialize, Deserialize, Debug)]
+struct ServerMessage {
+    #[serde(rename = "type")]
+    message_type: String,
+    player_id: Option<Uuid>,
+    match_id: Option<Uuid>,
+    opponent: Option<Uuid>,
+    color: Option<String>,
+    reason: Option<String>,
+    response: Option<String>,
+}*/
+
+#[derive(Serialize, Deserialize)]
+pub enum ServerMessage2 {
+    GameEnd {
+        winner: GameEnd,
+    },
+    UIUpdate {
+        fen: String,
+    },
+    MatchFound {
+        match_id: Uuid,
+        color: String,
+        opponent_name: String,
+    },
+    Ok {
+        response: Result<(), String>,
+    },
+}
+
+#[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum ClientEvent {
     Join { username: String },
     FindMatch,
-    Move { from: String, to: String },
+    Move { step: ChessMove },
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EventResponse {
-    pub response: Result<(), String>,
 }
 
 #[derive(Debug)]
@@ -64,23 +97,24 @@ pub struct GameMatch {
     pub player_white: Uuid,
     pub player_black: Uuid,
     pub board_state: String,
-    pub move_history: Vec<String>,
+    pub move_history: Vec<Step>,
 }
 
 // Message sending utilities
-pub async fn send_message_to_player(
-    connections: &ConnectionMap,
-    player_id: Uuid,
+pub async fn send_message_to_player_connection(
+    connection: Option<&mut PlayerConnection>,
     message: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut connections_lock = connections.lock().await;
-    if let Some(connection) = connections_lock.get_mut(&player_id) {
-        connection
-            .tx
-            .send(Message::Text(message.to_string()))
-            .await?;
+) -> Result<(), tokio_tungstenite::tungstenite::Error> {
+    match connection {
+        Some(connection) => {
+            println!("sending message to: {}", connection.id);
+            connection.tx.send(Message::Text(message.to_string())).await
+        }
+        None => {
+            eprintln!("No connection provided");
+            Err(tokio_tungstenite::tungstenite::Error::ConnectionClosed)
+        }
     }
-    Ok(())
 }
 
 pub async fn broadcast_to_all(connections: &ConnectionMap, message: &str) {
@@ -108,8 +142,16 @@ pub async fn broadcast_to_match(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let matches_lock = matches.lock().await;
     if let Some(game_match) = matches_lock.get(&match_id) {
-        send_message_to_player(connections, game_match.player_white, message).await?;
-        send_message_to_player(connections, game_match.player_black, message).await?;
+        send_message_to_player_connection(
+            connections.lock().await.get_mut(&game_match.player_white),
+            message,
+        )
+        .await?;
+        send_message_to_player_connection(
+            connections.lock().await.get_mut(&game_match.player_black),
+            message,
+        )
+        .await?;
     }
     Ok(())
 }
@@ -144,14 +186,6 @@ pub async fn handle_connection(
 
     println!("New connection: {}", player_id);
 
-    // Send welcome message
-    let _ = send_message_to_player(
-        &connections,
-        player_id,
-        &format!(r#"{{"type": "welcome", "player_id": "{}"}}"#, player_id),
-    )
-    .await;
-
     // Message processing loop
     while let Some(Ok(message)) = read.next().await {
         if message.is_text() {
@@ -160,8 +194,6 @@ pub async fn handle_connection(
 
             let client_data: ClientEvent = serde_json::from_str(text)
                 .expect("Failed to convert data into json at handle_connection");
-
-            println!("client: {:?}", client_data);
 
             match client_data {
                 Join { username } => {
@@ -172,15 +204,11 @@ pub async fn handle_connection(
                     }
 
                     //respone to client
-                    let response: EventResponse = EventResponse {
-                        response: core::result::Result::Ok(()),
-                    };
+                    let response = ServerMessage2::Ok { response: Ok(()) };
 
-                    println!("response: {:?}", response);
-
-                    let _ = send_message_to_player(
-                        &connections,
-                        player_id,
+                    let mut conn_map = connections.lock().await;
+                    let _ = send_message_to_player_connection(
+                        conn_map.get_mut(&player_id),
                         &serde_json::to_string(&response).unwrap(),
                     )
                     .await;
@@ -191,18 +219,136 @@ pub async fn handle_connection(
                     println!("Appended {} to the waiting queue", player_id);
                     println!("queue {:?}", wait_queue);
                 }
-                Move { from, to } => {}
+                Move { step } => {
+                    let match_id = connections
+                        .lock()
+                        .await
+                        .get(&player_id)
+                        .unwrap()
+                        .current_match
+                        .unwrap();
+
+                    {
+                        let mut matches = matches.lock().await;
+                        matches.get_mut(&match_id).unwrap().board_state =
+                            engine::get_board_after_move(
+                                &matches.get(&match_id).unwrap().board_state,
+                                &step,
+                            );
+                    }
+                    let message = ServerMessage2::UIUpdate {
+                        fen: matches
+                            .lock()
+                            .await
+                            .get(&match_id)
+                            .unwrap()
+                            .board_state
+                            .clone(),
+                    };
+
+                    let _ = broadcast_to_match(
+                        &connections,
+                        &matches,
+                        match_id,
+                        &serde_json::to_string(&message).unwrap(),
+                    )
+                    .await;
+
+                    {
+                        let is_game_end = engine::is_game_over(
+                            &matches.lock().await.get(&match_id).unwrap().board_state,
+                        );
+
+                        match is_game_end {
+                            Some(res) => {
+                                let message = ServerMessage2::GameEnd { winner: res };
+                                let _ = broadcast_to_match(
+                                    &connections,
+                                    &matches,
+                                    match_id,
+                                    &serde_json::to_string(&message).unwrap(),
+                                )
+                                .await;
+                                clean_up_match(&matches, &match_id);
+                            }
+                            None => {
+                                println!("No winner match continues.")
+                            }
+                        }
+                    }
+                }
                 RequestLegalMoves { fen } => {
                     let moves = get_available_moves(&fen);
-                    let _ = send_message_to_player(
-                        &connections,
-                        player_id,
+                    let _ = send_message_to_player_connection(
+                        connections.lock().await.get_mut(&player_id),
                         &serde_json::to_string(&moves).unwrap(),
                     )
                     .await;
                     println!("Sent moves to player: {}", player_id);
                 }
-                _ => {}
+                Resign => {
+                    let (fuck, fuck_id): (ServerMessage2, &Uuid) = {
+                        let matches = matches.lock().await;
+
+                        let curr_match = matches
+                            .get(
+                                &connections
+                                    .lock()
+                                    .await
+                                    .get(&player_id)
+                                    .unwrap()
+                                    .current_match
+                                    .unwrap(),
+                            )
+                            .unwrap();
+
+                        if player_id == curr_match.player_white {
+                            (
+                                ServerMessage2::GameEnd {
+                                    winner: GameEnd::BlackWon("Resigned".to_string()),
+                                },
+                                &connections
+                                    .lock()
+                                    .await
+                                    .get(&player_id)
+                                    .unwrap()
+                                    .current_match
+                                    .unwrap(),
+                            )
+                        } else {
+                            (
+                                ServerMessage2::GameEnd {
+                                    winner: GameEnd::WhiteWon("Resigned".to_string()),
+                                },
+                                &connections
+                                    .lock()
+                                    .await
+                                    .get(&player_id)
+                                    .unwrap()
+                                    .current_match
+                                    .unwrap(),
+                            )
+                        }
+                    };
+
+                    broadcast_to_match(
+                        &connections,
+                        &matches,
+                        connections
+                            .lock()
+                            .await
+                            .get(&player_id)
+                            .unwrap()
+                            .current_match
+                            .unwrap(),
+                        &serde_json::to_string(&fuck).unwrap(),
+                    )
+                    .await;
+                    clean_up_match(&matches, fuck_id);
+                }
+                _ => {
+                    println!("Not known client event");
+                }
             }
         }
     }
@@ -239,8 +385,24 @@ mod tests {
         let connections = new_connection_map();
         let player_id = Uuid::new_v4();
 
-        let result = send_message_to_player(&connections, player_id, "test message").await;
-        assert!(result.is_ok(), "Should handle missing player gracefully");
+        // Test 1: Pass None directly (non-existent player)
+        let result = send_message_to_player_connection(None, "test message").await;
+
+        assert!(result.is_err(), "Should return error for None connection");
+        println!("Test passed: Handles None connection correctly");
+
+        // Test 2: Try to get non-existent player from map
+        let mut conn = connections.lock().await;
+        let non_existent_connection = conn.get_mut(&player_id); // This will be None
+
+        let result2 =
+            send_message_to_player_connection(non_existent_connection, "test message").await;
+
+        assert!(
+            result2.is_err(),
+            "Should return error for non-existent player"
+        );
+        println!("Test passed: Handles non-existent player in map correctly");
     }
 
     #[tokio::test]
