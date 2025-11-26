@@ -26,12 +26,8 @@ impl MatchmakingSystem {
         }
     }
 
-    pub async fn clean_up(&self, match_id: Uuid) {
-        self.matches.lock().await.remove(&match_id);
-    }
-
     async fn try_create_match(&self) {
-        info!("Checking for new matches!");
+        //info!("Checking for new matches!");
         let mut queue = self.waiting_queue.lock().await;
 
         while queue.len() >= 2 {
@@ -72,6 +68,7 @@ impl MatchmakingSystem {
                 }
                 if let Some(player) = conn_map.get_mut(&black_player) {
                     player.current_match = Some(match_id);
+                    //TODO: at the end of a match delete this from player
                 } else {
                     error!("Could not store match id for black player");
                 }

@@ -1,7 +1,17 @@
 use eframe::egui;
+use env_logger::Env;
+use log::{error, info};
 
 fn main() -> eframe::Result<()> {
-    let options = eframe::NativeOptions{
+    //set up for logging
+    let env = Env::default().filter_or("MY_LOG_LEVEL", "INFO");
+    env_logger::init_from_env(env);
+    info!("Initialized logger");
+
+    //create a TCPlistener with tokio and bind machine ip for connection
+    //for this we need to query the ip
+
+    let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_fullscreen(true)
             .with_min_inner_size(egui::vec2(800.0, 600.0)) // Minimum width, height
@@ -9,23 +19,23 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-    "Knightly",
-    options,
-    Box::new(|cc| {
-        let mut fonts = egui::FontDefinitions::default();
-        fonts.font_data.insert(
-            "symbols".to_owned(),
-            egui::FontData::from_static(include_bytes!("../fonts/DejaVuSans.ttf")).into(),
-        );
-        fonts
-            .families
-            .entry(egui::FontFamily::Proportional)
-            .or_default()
-            .insert(0, "symbols".to_owned());
-        cc.egui_ctx.set_fonts(fonts);
-        Ok(Box::new(ChessApp::default()))
-    }),
-)
+        "Knightly",
+        options,
+        Box::new(|cc| {
+            let mut fonts = egui::FontDefinitions::default();
+            fonts.font_data.insert(
+                "symbols".to_owned(),
+                egui::FontData::from_static(include_bytes!("../fonts/DejaVuSans.ttf")).into(),
+            );
+            fonts
+                .families
+                .entry(egui::FontFamily::Proportional)
+                .or_default()
+                .insert(0, "symbols".to_owned());
+            cc.egui_ctx.set_fonts(fonts);
+            Ok(Box::new(ChessApp::default()))
+        }),
+    )
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -169,13 +179,14 @@ impl ChessApp {
         self.fullscreen = self.pending_settings.fullscreen;
         self.selected_resolution = self.pending_settings.selected_resolution;
         self.server_port = self.pending_settings.server_port.clone();
-        
+
         if let Some(resolution) = self.resolutions.get(self.selected_resolution) {
-            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(
-                egui::Vec2::new(resolution.0 as f32, resolution.1 as f32)
-            ));
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::Vec2::new(
+                resolution.0 as f32,
+                resolution.1 as f32,
+            )));
         }
-        
+
         ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(self.fullscreen));
     }
 
@@ -196,16 +207,22 @@ impl eframe::App for ChessApp {
                         ui.heading("♞ Knightly ♞");
                         ui.add_space(30.0);
 
-                        if ui.add_sized([300.0, 60.0], egui::Button::new("Play")).clicked() {
+                        if ui
+                            .add_sized([300.0, 60.0], egui::Button::new("Play"))
+                            .clicked()
+                        {
                             self.state = AppState::InGame;
                         }
                         ui.add_space(8.0);
-                        
-                        if ui.add_sized([300.0, 60.0], egui::Button::new("Settings")).clicked() {
+
+                        if ui
+                            .add_sized([300.0, 60.0], egui::Button::new("Settings"))
+                            .clicked()
+                        {
                             self.enter_settings();
                         }
                         ui.add_space(8.0);
-                        
+
                         if ui
                             .add_sized([300.0, 60.0], egui::Button::new("Quit"))
                             .clicked()
@@ -225,7 +242,10 @@ impl eframe::App for ChessApp {
                         // Fullscreen toggle
                         ui.horizontal(|ui| {
                             ui.label("Fullscreen:");
-                            if ui.checkbox(&mut self.pending_settings.fullscreen, "").changed() {
+                            if ui
+                                .checkbox(&mut self.pending_settings.fullscreen, "")
+                                .changed()
+                            {
                                 // If enabling fullscreen, we might want to disable resolution selection
                             }
                         });
@@ -241,7 +261,8 @@ impl eframe::App for ChessApp {
                                     self.resolutions[self.pending_settings.selected_resolution].1
                                 ))
                                 .show_ui(ui, |ui| {
-                                    for (i, &(width, height)) in self.resolutions.iter().enumerate() {
+                                    for (i, &(width, height)) in self.resolutions.iter().enumerate()
+                                    {
                                         ui.selectable_value(
                                             &mut self.pending_settings.selected_resolution,
                                             i,
@@ -255,20 +276,28 @@ impl eframe::App for ChessApp {
                         // Server port input field
                         ui.horizontal(|ui| {
                             ui.label("Local Server Port:");
-                            ui.add(egui::TextEdit::singleline(&mut self.pending_settings.server_port)
-                                .desired_width(100.0)
-                                .hint_text("8080"));
+                            ui.add(
+                                egui::TextEdit::singleline(&mut self.pending_settings.server_port)
+                                    .desired_width(100.0)
+                                    .hint_text("8080"),
+                            );
                         });
                         ui.add_space(30.0);
 
                         // Apply and Cancel buttons
                         ui.horizontal(|ui| {
-                            if ui.add_sized([140.0, 40.0], egui::Button::new("Apply")).clicked() {
+                            if ui
+                                .add_sized([140.0, 40.0], egui::Button::new("Apply"))
+                                .clicked()
+                            {
                                 self.apply_settings(ctx);
                                 self.state = AppState::MainMenu;
                             }
-                            
-                            if ui.add_sized([140.0, 40.0], egui::Button::new("Cancel")).clicked() {
+
+                            if ui
+                                .add_sized([140.0, 40.0], egui::Button::new("Cancel"))
+                                .clicked()
+                            {
                                 self.state = AppState::MainMenu;
                             }
                         });
@@ -293,24 +322,24 @@ impl eframe::App for ChessApp {
                         ui.label(format!("Turn: {:?}", self.turn));
                     });
                 });
-                
+
                 egui::CentralPanel::default().show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         let full_avail = ui.available_rect_before_wrap();
                         let board_tile = (full_avail.width().min(full_avail.height())) / 8.0;
                         let board_size = board_tile * 8.0;
-                        
+
                         // Create a child UI at the board position
                         let (response, painter) = ui.allocate_painter(
                             egui::Vec2::new(board_size, board_size),
-                            egui::Sense::click()
+                            egui::Sense::click(),
                         );
-                        
+
                         let board_rect = egui::Rect::from_center_size(
                             full_avail.center(),
-                            egui::vec2(board_size, board_size)
+                            egui::vec2(board_size, board_size),
                         );
-                        
+
                         // Draw the chess board
                         let tile_size = board_size / 8.0;
                         for row in 0..8 {
@@ -320,17 +349,17 @@ impl eframe::App for ChessApp {
                                 } else {
                                     egui::Color32::from_rgb(217, 217, 217)
                                 };
-                                
+
                                 let rect = egui::Rect::from_min_size(
                                     egui::Pos2::new(
                                         board_rect.min.x + col as f32 * tile_size,
-                                        board_rect.min.y + row as f32 * tile_size
+                                        board_rect.min.y + row as f32 * tile_size,
                                     ),
-                                    egui::Vec2::new(tile_size, tile_size)
+                                    egui::Vec2::new(tile_size, tile_size),
                                 );
-                                
+
                                 painter.rect_filled(rect, 0.0, color);
-                                
+
                                 // Draw piece
                                 let piece = self.board[row][col];
                                 if piece != Piece::Empty {
@@ -341,27 +370,36 @@ impl eframe::App for ChessApp {
                                         egui::Align2::CENTER_CENTER,
                                         symbol,
                                         font_id,
-                                        if matches!(piece, Piece::King('w') | Piece::Queen('w') | Piece::Rook('w') | Piece::Bishop('w') | Piece::Knight('w') | Piece::Pawn('w')) {
+                                        if matches!(
+                                            piece,
+                                            Piece::King('w')
+                                                | Piece::Queen('w')
+                                                | Piece::Rook('w')
+                                                | Piece::Bishop('w')
+                                                | Piece::Knight('w')
+                                                | Piece::Pawn('w')
+                                        ) {
                                             egui::Color32::WHITE
                                         } else {
                                             egui::Color32::BLACK
-                                        }
+                                        },
                                     );
                                 }
-                                
+
                                 // Draw selection highlight
                                 if self.selected == Some((row, col)) {
                                     painter.rect_stroke(
-                                        rect, 
-                                        0.0, 
+                                        rect,
+                                        0.0,
                                         egui::Stroke::new(3.0, egui::Color32::RED),
-                                        egui::StrokeKind::Inside
+                                        egui::StrokeKind::Inside,
                                     );
                                 }
-                                
+
                                 // Handle clicks
                                 if ui.ctx().input(|i| i.pointer.primary_clicked()) {
-                                    let click_pos = ui.ctx().input(|i| i.pointer.interact_pos()).unwrap();
+                                    let click_pos =
+                                        ui.ctx().input(|i| i.pointer.interact_pos()).unwrap();
                                     if rect.contains(click_pos) {
                                         self.handle_click(row, col);
                                     }
@@ -387,14 +425,14 @@ mod tests {
         assert!(matches!(app.board[1][0], Piece::Pawn('b')));
         assert!(matches!(app.board[6][0], Piece::Pawn('w')));
     }
-    
+
     #[test]
     fn test_piece_symbols() {
         assert_eq!(Piece::King('w').symbol(), "♔");
         assert_eq!(Piece::King('b').symbol(), "♚");
         assert_eq!(Piece::Empty.symbol(), "");
     }
-    
+
     #[test]
     fn test_piece_selection() {
         let mut app = ChessApp::default();
@@ -403,7 +441,7 @@ mod tests {
         app.handle_click(6, 0);
         assert_eq!(app.selected, None);
     }
-    
+
     #[test]
     fn test_piece_movement() {
         let mut app = ChessApp::default();
@@ -422,7 +460,7 @@ mod tests {
         app.handle_click(5, 0); // White moves
         assert_eq!(app.turn, Turn::Black); // Should now be Black's turn
     }
-    
+
     #[test]
     fn test_server_port_default() {
         let app = ChessApp::default();
