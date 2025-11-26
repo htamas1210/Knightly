@@ -6,7 +6,6 @@ use engine::{get_available_moves, is_game_over};
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::char::from_u32_unchecked;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::net::TcpStream;
