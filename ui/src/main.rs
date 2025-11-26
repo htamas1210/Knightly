@@ -1,6 +1,7 @@
 use eframe::egui;
 use env_logger::Env;
 use log::{error, info, warn};
+use uuid::Uuid;
 
 use crate::connection::handle_connection;
 mod connection;
@@ -83,6 +84,7 @@ enum AppState {
     Settings,
 }
 
+#[derive(Clone)]
 struct ChessApp {
     fullscreen: bool,
     resolutions: Vec<(u32, u32)>,
@@ -93,6 +95,9 @@ struct ChessApp {
     turn: Turn,
     pending_settings: PendingSettings,
     server_port: String,
+    player_color: Option<String>,
+    match_id: Option<Uuid>,
+    opponent_name: Option<String>,
 }
 
 #[derive(Default)]
@@ -121,6 +126,9 @@ impl Default for ChessApp {
             turn: Turn::White,
             pending_settings: PendingSettings::default(),
             server_port: "9001".to_string(), // Default port
+            player_color: None,
+            match_id: None,
+            opponent_name: None,
         }
     }
 }
@@ -218,7 +226,7 @@ impl eframe::App for ChessApp {
                             //create a TCPlistener with tokio and bind machine ip for connection
                             tokio::spawn(async move {
                                 info!("tokoi");
-                                handle_connection(&port).await
+                                handle_connection(&port, self).await
                             });
 
                             self.state = AppState::InGame;
@@ -351,145 +359,145 @@ impl eframe::App for ChessApp {
                         );
 
                         // Draw the chess board
-                        let player = "black";
-                        if player =="white"{
-                        let tile_size = board_size / 8.0;
-                        for row in 0..8 {
-                            for col in 0..8 {
-                                let color = if (row + col) % 2 == 0 {
-                                    egui::Color32::from_rgb(217, 217, 217)
-                                } else {
-                                    egui::Color32::from_rgb(100, 97, 97)
-                                };
+                        if self.player_color == Some("white".to_string()) {
+                            let tile_size = board_size / 8.0;
+                            for row in 0..8 {
+                                for col in 0..8 {
+                                    let color = if (row + col) % 2 == 0 {
+                                        egui::Color32::from_rgb(217, 217, 217)
+                                    } else {
+                                        egui::Color32::from_rgb(100, 97, 97)
+                                    };
 
-                                let rect = egui::Rect::from_min_size(
-                                    egui::Pos2::new(
-                                        board_rect.min.x + col as f32 * tile_size,
-                                        board_rect.min.y + row as f32 * tile_size,
-                                    ),
-                                    egui::Vec2::new(tile_size, tile_size),
-                                );
-
-                                painter.rect_filled(rect, 0.0, color);
-
-                                // Draw piece
-                                let piece = self.board[row][col];
-                                if piece != Piece::Empty {
-                                    let symbol = piece.symbol();
-                                    let font_id = egui::FontId::proportional(tile_size * 0.75);
-                                    painter.text(
-                                        rect.center(),
-                                        egui::Align2::CENTER_CENTER,
-                                        symbol,
-                                        font_id,
-                                        if matches!(
-                                            piece,
-                                            Piece::King('w')
-                                                | Piece::Queen('w')
-                                                | Piece::Rook('w')
-                                                | Piece::Bishop('w')
-                                                | Piece::Knight('w')
-                                                | Piece::Pawn('w')
-                                        ) {
-                                            egui::Color32::WHITE
-                                        } else {
-                                            egui::Color32::BLACK
-                                        },
+                                    let rect = egui::Rect::from_min_size(
+                                        egui::Pos2::new(
+                                            board_rect.min.x + col as f32 * tile_size,
+                                            board_rect.min.y + row as f32 * tile_size,
+                                        ),
+                                        egui::Vec2::new(tile_size, tile_size),
                                     );
-                                }
 
-                                // Draw selection highlight
-                                if self.selected == Some((row, col)) {
-                                    painter.rect_stroke(
-                                        rect,
-                                        0.0,
-                                        egui::Stroke::new(3.0, egui::Color32::RED),
-                                        egui::StrokeKind::Inside,
-                                    );
-                                }
+                                    painter.rect_filled(rect, 0.0, color);
 
-                                // Handle clicks
-                                if ui.ctx().input(|i| i.pointer.primary_clicked()) {
-                                    let click_pos =
-                                        ui.ctx().input(|i| i.pointer.interact_pos()).unwrap();
-                                    if rect.contains(click_pos) {
-                                        self.handle_click(row, col);
+                                    // Draw piece
+                                    let piece = self.board[row][col];
+                                    if piece != Piece::Empty {
+                                        let symbol = piece.symbol();
+                                        let font_id = egui::FontId::proportional(tile_size * 0.75);
+                                        painter.text(
+                                            rect.center(),
+                                            egui::Align2::CENTER_CENTER,
+                                            symbol,
+                                            font_id,
+                                            if matches!(
+                                                piece,
+                                                Piece::King('w')
+                                                    | Piece::Queen('w')
+                                                    | Piece::Rook('w')
+                                                    | Piece::Bishop('w')
+                                                    | Piece::Knight('w')
+                                                    | Piece::Pawn('w')
+                                            ) {
+                                                egui::Color32::WHITE
+                                            } else {
+                                                egui::Color32::BLACK
+                                            },
+                                        );
+                                    }
+
+                                    // Draw selection highlight
+                                    if self.selected == Some((row, col)) {
+                                        painter.rect_stroke(
+                                            rect,
+                                            0.0,
+                                            egui::Stroke::new(3.0, egui::Color32::RED),
+                                            egui::StrokeKind::Inside,
+                                        );
+                                    }
+
+                                    // Handle clicks
+                                    if ui.ctx().input(|i| i.pointer.primary_clicked()) {
+                                        let click_pos =
+                                            ui.ctx().input(|i| i.pointer.interact_pos()).unwrap();
+                                        if rect.contains(click_pos) {
+                                            self.handle_click(row, col);
+                                        }
                                     }
                                 }
                             }
                         }
-                        }
-                        if player=="black"{
-                        {
-                        let tile_size = board_size / 8.0;
-                        for row in 0..8 {
-                            for col in 0..8 {
-                                let color = if (row + col) % 2 == 0 {
-                                    egui::Color32::from_rgb(217, 217, 217)
-                                } else {
-                                    egui::Color32::from_rgb(100, 97, 97)
-                                };
-
-                                let rect = egui::Rect::from_min_size(
-                                    egui::Pos2::new(
-                                        board_rect.min.x + col as f32 * tile_size,
-                                        board_rect.min.y + row as f32 * tile_size,
-                                    ),
-                                    egui::Vec2::new(tile_size, tile_size),
-                                );
-
-                                painter.rect_filled(rect, 0.0, color);
-
-                                // Draw piece
-                                let piece = self.board[row][col];
-                                if piece != Piece::Empty {
-                                    let symbol = piece.symbol();
-                                    let font_id = egui::FontId::proportional(tile_size * 0.75);
-                                    painter.text(
-                                        rect.center(),
-                                        egui::Align2::CENTER_CENTER,
-                                        symbol,
-                                        font_id,
-                                        if matches!(
-                                            piece,
-                                            Piece::King('w')
-                                                | Piece::Queen('w')
-                                                | Piece::Rook('w')
-                                                | Piece::Bishop('w')
-                                                | Piece::Knight('w')
-                                                | Piece::Pawn('w')
-                                        ) {
-                                            egui::Color32::BLACK
+                        if self.player_color == Some("black".to_string()) {
+                            {
+                                let tile_size = board_size / 8.0;
+                                for row in 0..8 {
+                                    for col in 0..8 {
+                                        let color = if (row + col) % 2 == 0 {
+                                            egui::Color32::from_rgb(217, 217, 217)
                                         } else {
-                                            egui::Color32::WHITE
-                                        },
-                                    );
-                                }
+                                            egui::Color32::from_rgb(100, 97, 97)
+                                        };
 
-                                // Draw selection highlight
-                                if self.selected == Some((row, col)) {
-                                    painter.rect_stroke(
-                                        rect,
-                                        0.0,
-                                        egui::Stroke::new(3.0, egui::Color32::RED),
-                                        egui::StrokeKind::Inside,
-                                    );
-                                }
+                                        let rect = egui::Rect::from_min_size(
+                                            egui::Pos2::new(
+                                                board_rect.min.x + col as f32 * tile_size,
+                                                board_rect.min.y + row as f32 * tile_size,
+                                            ),
+                                            egui::Vec2::new(tile_size, tile_size),
+                                        );
 
-                                // Handle clicks
-                                if ui.ctx().input(|i| i.pointer.primary_clicked()) {
-                                    let click_pos =
-                                        ui.ctx().input(|i| i.pointer.interact_pos()).unwrap();
-                                    if rect.contains(click_pos) {
-                                        self.handle_click(row, col);
+                                        painter.rect_filled(rect, 0.0, color);
+
+                                        // Draw piece
+                                        let piece = self.board[row][col];
+                                        if piece != Piece::Empty {
+                                            let symbol = piece.symbol();
+                                            let font_id =
+                                                egui::FontId::proportional(tile_size * 0.75);
+                                            painter.text(
+                                                rect.center(),
+                                                egui::Align2::CENTER_CENTER,
+                                                symbol,
+                                                font_id,
+                                                if matches!(
+                                                    piece,
+                                                    Piece::King('w')
+                                                        | Piece::Queen('w')
+                                                        | Piece::Rook('w')
+                                                        | Piece::Bishop('w')
+                                                        | Piece::Knight('w')
+                                                        | Piece::Pawn('w')
+                                                ) {
+                                                    egui::Color32::BLACK
+                                                } else {
+                                                    egui::Color32::WHITE
+                                                },
+                                            );
+                                        }
+
+                                        // Draw selection highlight
+                                        if self.selected == Some((row, col)) {
+                                            painter.rect_stroke(
+                                                rect,
+                                                0.0,
+                                                egui::Stroke::new(3.0, egui::Color32::RED),
+                                                egui::StrokeKind::Inside,
+                                            );
+                                        }
+
+                                        // Handle clicks
+                                        if ui.ctx().input(|i| i.pointer.primary_clicked()) {
+                                            let click_pos = ui
+                                                .ctx()
+                                                .input(|i| i.pointer.interact_pos())
+                                                .unwrap();
+                                            if rect.contains(click_pos) {
+                                                self.handle_click(row, col);
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
-                        }
-                        }
-                        
-
                     });
                 });
             }
@@ -548,6 +556,6 @@ mod tests {
     #[test]
     fn test_server_port_default() {
         let app = ChessApp::default();
-        assert_eq!(app.server_port, "8080");
+        assert_eq!(app.server_port, "9001");
     }
 }
