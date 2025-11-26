@@ -19,3 +19,4 @@ engine = {path = "../engine/"}
 log = {version = "0.4.28"}
 env_logger = "0.11.8"
 local-ip-address = "0.6.5"
+anyhow = "1.0.100"

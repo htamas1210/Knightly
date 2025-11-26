@@ -1,19 +1,20 @@
 use eframe::egui;
 use env_logger::Env;
-use log::{error, info};
+use log::{error, info, warn};
 
-fn main() -> eframe::Result<()> {
+use crate::connection::handle_connection;
+mod connection;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<(), eframe::Error> {
     //set up for logging
     let env = Env::default().filter_or("MY_LOG_LEVEL", "INFO");
     env_logger::init_from_env(env);
-    info!("Initialized logger");
-
-    //create a TCPlistener with tokio and bind machine ip for connection
-    //for this we need to query the ip
+    warn!("Initialized logger");
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_fullscreen(true)
+            .with_fullscreen(false)
             .with_min_inner_size(egui::vec2(800.0, 600.0)) // Minimum width, height
             .with_inner_size(egui::vec2(7680.0, 4320.0)), // Initial size
         ..Default::default()
@@ -119,7 +120,7 @@ impl Default for ChessApp {
             selected: None,
             turn: Turn::White,
             pending_settings: PendingSettings::default(),
-            server_port: "8080".to_string(), // Default port
+            server_port: "9001".to_string(), // Default port
         }
     }
 }
@@ -211,6 +212,15 @@ impl eframe::App for ChessApp {
                             .add_sized([300.0, 60.0], egui::Button::new("Play"))
                             .clicked()
                         {
+                            let port = self.server_port.clone();
+                            info!("\nstarting connection\n");
+
+                            //create a TCPlistener with tokio and bind machine ip for connection
+                            tokio::spawn(async move {
+                                info!("tokoi");
+                                handle_connection(&port).await
+                            });
+
                             self.state = AppState::InGame;
                         }
                         ui.add_space(8.0);
@@ -279,7 +289,7 @@ impl eframe::App for ChessApp {
                             ui.add(
                                 egui::TextEdit::singleline(&mut self.pending_settings.server_port)
                                     .desired_width(100.0)
-                                    .hint_text("8080"),
+                                    .hint_text("9001"),
                             );
                         });
                         ui.add_space(30.0);
