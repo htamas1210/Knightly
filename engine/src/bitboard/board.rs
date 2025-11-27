@@ -159,6 +159,30 @@ impl Board {
     return if self.side_to_move == 0 { self.bitboards[5].trailing_zeros() } else { self.bitboards[11].trailing_zeros() };
   }
 
+  pub fn fen(&self) -> String {
+    let mut fen = String::new();
+
+    for row in (0..8).rev() {
+      let mut empty = 0;
+      for col in 0..8 {
+        let sq = row * 8 + col;
+        if let Some(piece) = self.get_piece_character(sq) {
+          if empty > 0 {
+            fen.push_str(&empty.to_string());
+          }
+          fen.push(piece);
+        } else {
+          empty += 1;
+          if col == 7 {
+            fen.push_str(&empty.to_string());
+          }
+        }
+      }
+    }
+
+    return fen;
+  }
+
   fn calc_occupancy(&mut self) {
     self.occupancy = [0u64; 3];
     for b in 0..6 {
