@@ -20,7 +20,7 @@ impl Board {
         self.make_capture(played_move);
       }
       BitMoveType::Castle => {
-        
+        self.make_castle(played_move);
       }
       BitMoveType::EnPassant => {
         
