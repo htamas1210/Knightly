@@ -16,7 +16,7 @@ impl Board {
         self.make_quiet(played_move);
       }
       BitMoveType::Capture => {
-        
+        self.make_capture(played_move);
       }
       BitMoveType::Castle => {
         
