@@ -14,6 +14,7 @@ pub struct Board {
 }
 
 impl Board {
+  pub const EMPTY_SQUARE: u8 = 12;
 
   pub fn new_clear() -> Self {
     let mut bit_board: Self = Self {

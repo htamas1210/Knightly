@@ -12,7 +12,7 @@ impl Board {
 
     match move_type {
       BitMoveType::Quiet => {
-        
+        self.make_quiet(played_move);
       }
       BitMoveType::Capture => {
         
