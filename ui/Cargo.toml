@@ -6,5 +6,17 @@ edition = "2024"
 [dependencies]
 eframe = "0.33.0"
 egui = "0.33.0"
-tokio-tungstenite = "0.28.0"
 winit = "0.30.12"
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.21"
+tungstenite = "0.21"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+futures-util = "0.3.31"
+url = "2.5.7"
+uuid = {version = "1.18.1", features = ["v4", "serde"] }
+engine = {path = "../engine/"}
+log = {version = "0.4.28"}
+env_logger = "0.11.8"
+local-ip-address = "0.6.5"
+anyhow = "1.0.100"

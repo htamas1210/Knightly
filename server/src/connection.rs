@@ -6,7 +6,6 @@ use engine::{get_available_moves, is_game_over};
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::char::from_u32_unchecked;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::net::TcpStream;
@@ -45,18 +44,6 @@ pub struct Step {
     pub from: String,
     pub to: String,
 }
-
-/*#[derive(Serialize, Deserialize, Debug)]
-struct ServerMessage {
-    #[serde(rename = "type")]
-    message_type: String,
-    player_id: Option<Uuid>,
-    match_id: Option<Uuid>,
-    opponent: Option<Uuid>,
-    color: Option<String>,
-    reason: Option<String>,
-    response: Option<String>,
-}*/
 
 #[derive(Serialize, Deserialize)]
 pub enum ServerMessage2 {

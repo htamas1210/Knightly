@@ -7,12 +7,6 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Step {
-    from: String,
-    to: String,
-}
-
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum ClientMessage {
@@ -22,17 +16,6 @@ enum ClientMessage {
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ServerMessage {
-    #[serde(rename = "type")]
-    message_type: String,
-    player_id: Option<String>,
-    match_id: Option<String>,
-    opponent: Option<String>,
-    color: Option<String>,
-    reason: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,6 +30,9 @@ pub enum ServerMessage2 {
         match_id: Uuid,
         color: String,
         opponent_name: String,
+    },
+    Ok {
+        response: Result<(), String>,
     },
 }
 

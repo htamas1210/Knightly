@@ -1,8 +1,7 @@
 mod connection;
 mod matchmaking;
-use env_logger::{Env, Logger};
-use log::{error, info, warn};
-use std::env;
+use env_logger::Env;
+use log::{error, info};
 use tokio::net::TcpListener;
 
 #[tokio::main]
