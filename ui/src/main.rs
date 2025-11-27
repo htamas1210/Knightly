@@ -1,14 +1,18 @@
 use eframe::egui;
+use engine::{boardsquare::BoardSquare, chessmove::ChessMove};
 use env_logger::Env;
+use futures_util::{SinkExt, StreamExt};
 use log::{error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc;
+use tokio_tungstenite::{connect_async, tungstenite::Message};
+use url::Url;
 use uuid::Uuid;
-
-use crate::connection::handle_connection;
-mod connection;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<(), eframe::Error> {
-    //set up for logging
+    // Set up logging
     let env = Env::default().filter_or("MY_LOG_LEVEL", "INFO");
     env_logger::init_from_env(env);
     warn!("Initialized logger");
@@ -16,10 +20,11 @@ async fn main() -> anyhow::Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_fullscreen(false)
-            .with_min_inner_size(egui::vec2(800.0, 600.0)) // Minimum width, height
-            .with_inner_size(egui::vec2(7680.0, 4320.0)), // Initial size
+            .with_min_inner_size(egui::vec2(800.0, 600.0))
+            .with_inner_size(egui::vec2(1920.0, 1080.0)),
         ..Default::default()
     };
+
     eframe::run_native(
         "Knightly",
         options,
@@ -40,175 +45,312 @@ async fn main() -> anyhow::Result<(), eframe::Error> {
     )
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
-enum Piece {
-    King(char),
-    Queen(char),
-    Rook(char),
-    Bishop(char),
-    Knight(char),
-    Pawn(char),
-    Empty,
+// Server message types (from your connection.rs)
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ServerMessage2 {
+    GameEnd {
+        winner: String,
+    },
+    UIUpdate {
+        fen: String,
+    },
+    MatchFound {
+        match_id: Uuid,
+        color: String,
+        opponent_name: String,
+    },
+    Ok {
+        response: Result<(), String>,
+    },
 }
 
-impl Piece {
-    fn symbol(&self) -> &'static str {
-        match self {
-            Piece::King('w') => "♚",
-            Piece::Queen('w') => "♛",
-            Piece::Rook('w') => "♜",
-            Piece::Bishop('w') => "♝",
-            Piece::Knight('w') => "♞",
-            Piece::Pawn('w') => "♟︎",
-            Piece::King('b') => "♚",
-            Piece::Queen('b') => "♛",
-            Piece::Rook('b') => "♜",
-            Piece::Bishop('b') => "♝",
-            Piece::Knight('b') => "♞",
-            Piece::Pawn('b') => "♟︎",
-            Piece::Empty => "",
-            _ => "",
+// Client event types (from your connection.rs)
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum ClientEvent {
+    Join { username: String },
+    FindMatch,
+    Move { step: ChessMove },
+    Resign,
+    Chat { text: String },
+    RequestLegalMoves { fen: String },
+}
+
+// Game state
+#[derive(Debug, Clone)]
+struct GameState {
+    fen: String,
+    player_color: Option<String>,
+    opponent_name: Option<String>,
+    match_id: Option<Uuid>,
+    game_over: Option<String>,
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        Self {
+            fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+            player_color: None,
+            opponent_name: None,
+            match_id: None,
+            game_over: None,
         }
     }
 }
 
-#[derive(PartialEq, Debug)]
-enum Turn {
-    White,
-    Black,
-}
-
+// UI state
 enum AppState {
     MainMenu,
+    Connecting,
+    FindingMatch,
     InGame,
-    Settings,
+    GameOver,
 }
 
-#[derive(Clone)]
 struct ChessApp {
-    fullscreen: bool,
-    resolutions: Vec<(u32, u32)>,
-    selected_resolution: usize,
     state: AppState,
-    board: [[Piece; 8]; 8],
-    selected: Option<(usize, usize)>,
-    turn: Turn,
-    pending_settings: PendingSettings,
+    game_state: Arc<Mutex<GameState>>,
     server_port: String,
-    player_color: Option<String>,
-    match_id: Option<Uuid>,
-    opponent_name: Option<String>,
-}
+    username: String,
 
-#[derive(Default)]
-struct PendingSettings {
-    fullscreen: bool,
-    selected_resolution: usize,
-    server_port: String,
+    // Channels for communication with network tasks
+    tx_to_network: Option<mpsc::UnboundedSender<ClientEvent>>,
+    rx_from_network: Option<mpsc::UnboundedReceiver<ServerMessage2>>,
+
+    // UI state
+    selected_square: Option<(usize, usize)>,
 }
 
 impl Default for ChessApp {
     fn default() -> Self {
         Self {
-            fullscreen: true,
-            resolutions: vec![
-                (1280, 720),
-                (1600, 900),
-                (1920, 1080),
-                (2560, 1440),
-                (3840, 2160),
-                (7680, 4320),
-            ],
-            selected_resolution: 2, // Default to 1920x1080
             state: AppState::MainMenu,
-            board: Self::starting_board(),
-            selected: None,
-            turn: Turn::White,
-            pending_settings: PendingSettings::default(),
-            server_port: "9001".to_string(), // Default port
-            player_color: None,
-            match_id: None,
-            opponent_name: None,
+            game_state: Arc::new(Mutex::new(GameState::default())),
+            server_port: "9001".to_string(),
+            username: "Player".to_string(),
+            tx_to_network: None,
+            rx_from_network: None,
+            selected_square: None,
         }
     }
 }
 
 impl ChessApp {
-    fn starting_board() -> [[Piece; 8]; 8] {
-        use Piece::*;
-        [
-            [
-                Rook('b'),
-                Knight('b'),
-                Bishop('b'),
-                Queen('b'),
-                King('b'),
-                Bishop('b'),
-                Knight('b'),
-                Rook('b'),
-            ],
-            [Pawn('b'); 8],
-            [Empty; 8],
-            [Empty; 8],
-            [Empty; 8],
-            [Empty; 8],
-            [Pawn('w'); 8],
-            [
-                Rook('w'),
-                Knight('w'),
-                Bishop('w'),
-                Queen('w'),
-                King('w'),
-                Bishop('w'),
-                Knight('w'),
-                Rook('w'),
-            ],
-        ]
+    fn connect_to_server(&mut self) {
+        let server_port = self.server_port.clone();
+        let username = self.username.clone();
+        let game_state = self.game_state.clone();
+
+        // Create channels for communication
+        let (tx_to_network, rx_from_ui) = mpsc::unbounded_channel();
+        let (tx_to_ui, rx_from_network) = mpsc::unbounded_channel();
+
+        self.tx_to_network = Some(tx_to_network);
+        self.rx_from_network = Some(rx_from_network);
+
+        self.state = AppState::Connecting;
+
+        // Spawn network connection task
+        tokio::spawn(async move {
+            if let Err(e) =
+                Self::network_handler(server_port, username, rx_from_ui, tx_to_ui, game_state).await
+            {
+                error!("Network handler error: {}", e);
+            }
+        });
+    }
+
+    async fn network_handler(
+        server_port: String,
+        username: String,
+        mut rx_from_ui: mpsc::UnboundedReceiver<ClientEvent>,
+        tx_to_ui: mpsc::UnboundedSender<ServerMessage2>,
+        game_state: Arc<Mutex<GameState>>,
+    ) -> anyhow::Result<()> {
+        // Build WebSocket URL
+        let server_address = format!("ws://127.0.0.1:{}", server_port);
+        let url = Url::parse(&server_address)?;
+
+        info!("Connecting to: {}", server_address);
+        let (ws_stream, _) = connect_async(url).await?;
+        let (mut write, mut read) = ws_stream.split();
+
+        // Send initial join message and immediately send FindMatch
+        let join_event = ClientEvent::Join { username };
+        write
+            .send(Message::Text(serde_json::to_string(&join_event)?))
+            .await?;
+        info!("Sent Join event");
+
+        // Send FindMatch immediately after joining
+        let find_match_event = ClientEvent::FindMatch;
+        write
+            .send(Message::Text(serde_json::to_string(&find_match_event)?))
+            .await?;
+        info!("Sent FindMatch event");
+
+        // Spawn reader task
+        let tx_to_ui_clone = tx_to_ui.clone();
+        let game_state_clone = game_state.clone();
+        let reader_handle = tokio::spawn(async move {
+            while let Some(message) = read.next().await {
+                match message {
+                    Ok(msg) if msg.is_text() => {
+                        let text = msg.to_text().unwrap();
+                        info!("Received: {}", text);
+
+                        if let Ok(server_msg) = serde_json::from_str::<ServerMessage2>(text) {
+                            // Update game state
+                            if let Ok(mut state) = game_state_clone.lock() {
+                                match &server_msg {
+                                    ServerMessage2::UIUpdate { fen } => {
+                                        state.fen = fen.clone();
+                                    }
+                                    ServerMessage2::MatchFound {
+                                        color,
+                                        opponent_name,
+                                        ..
+                                    } => {
+                                        state.player_color = Some(color.clone());
+                                        state.opponent_name = Some(opponent_name.clone());
+                                    }
+                                    ServerMessage2::GameEnd { winner } => {
+                                        state.game_over = Some(winner.clone());
+                                    }
+                                    _ => {}
+                                }
+                            }
+
+                            // Send to UI
+                            if let Err(e) = tx_to_ui_clone.send(server_msg) {
+                                error!("Failed to send to UI: {}", e);
+                                break;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("WebSocket error: {}", e);
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        });
+
+        // Writer task (main thread)
+        while let Some(event) = rx_from_ui.recv().await {
+            let message = serde_json::to_string(&event)?;
+            write.send(Message::Text(message)).await?;
+            info!("Sent event to server: {:?}", event);
+        }
+
+        // Wait for reader to finish
+        let _ = reader_handle.await;
+
+        Ok(())
     }
 
     fn handle_click(&mut self, row: usize, col: usize) {
-        if let Some((r, c)) = self.selected {
-            let piece = self.board[r][c];
-            self.board[r][c] = Piece::Empty;
-            self.board[row][col] = piece;
-            self.selected = None;
-            self.turn = if self.turn == Turn::White {
-                Turn::Black
-            } else {
-                Turn::White
-            };
+        if let Some((from_row, from_col)) = self.selected_square {
+            // Send move to server
+            if let Some(tx) = &self.tx_to_network {
+                let chess_move = ChessMove::Quiet {
+                    piece_type: engine::piecetype::PieceType::WhiteKing,
+                    from_square: BoardSquare { x: 0, y: 1 },
+                    to_square: BoardSquare { x: 2, y: 2 },
+                    promotion_piece: None,
+                };
+                let move_event = ClientEvent::Move { step: chess_move };
+                let _ = tx.send(move_event);
+            }
+            self.selected_square = None;
         } else {
-            if self.board[row][col] != Piece::Empty {
-                self.selected = Some((row, col));
+            // Select square
+            self.selected_square = Some((row, col));
+        }
+    }
+
+    fn fen_to_board(&self, fen: &str) -> [[char; 8]; 8] {
+        let mut board = [[' '; 8]; 8];
+        let parts: Vec<&str> = fen.split_whitespace().collect();
+        let board_str = parts[0];
+
+        let mut row = 0;
+        let mut col = 0;
+
+        for c in board_str.chars() {
+            if c == '/' {
+                row += 1;
+                col = 0;
+            } else if c.is_digit(10) {
+                col += c.to_digit(10).unwrap() as usize;
+            } else {
+                if row < 8 && col < 8 {
+                    board[row][col] = c;
+                }
+                col += 1;
             }
         }
+
+        board
     }
 
-    fn apply_settings(&mut self, ctx: &egui::Context) {
-        self.fullscreen = self.pending_settings.fullscreen;
-        self.selected_resolution = self.pending_settings.selected_resolution;
-        self.server_port = self.pending_settings.server_port.clone();
-
-        if let Some(resolution) = self.resolutions.get(self.selected_resolution) {
-            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::Vec2::new(
-                resolution.0 as f32,
-                resolution.1 as f32,
-            )));
+    fn chess_char_to_piece(&self, c: char) -> &'static str {
+        match c {
+            'K' => "♔",
+            'Q' => "♕",
+            'R' => "♖",
+            'B' => "♗",
+            'N' => "♘",
+            'P' => "♙",
+            'k' => "♚",
+            'q' => "♛",
+            'r' => "♜",
+            'b' => "♝",
+            'n' => "♞",
+            'p' => "♟︎",
+            _ => "",
         }
-
-        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(self.fullscreen));
     }
 
-    fn enter_settings(&mut self) {
-        self.pending_settings.fullscreen = self.fullscreen;
-        self.pending_settings.selected_resolution = self.selected_resolution;
-        self.pending_settings.server_port = self.server_port.clone();
-        self.state = AppState::Settings;
+    fn process_network_messages(&mut self) {
+        if let Some(rx) = &mut self.rx_from_network {
+            while let Ok(msg) = rx.try_recv() {
+                match msg {
+                    ServerMessage2::MatchFound { .. } => {
+                        info!("Match found! Transitioning to InGame state");
+                        self.state = AppState::InGame;
+                    }
+                    ServerMessage2::GameEnd { .. } => {
+                        info!("Game over! Transitioning to GameOver state");
+                        self.state = AppState::GameOver;
+                    }
+                    ServerMessage2::Ok { response } => {
+                        info!("Server OK response: {:?}", response);
+                        // When we get the OK response, transition to FindingMatch state
+                        // This shows the "Finding Match..." screen while we wait
+                        if matches!(self.state, AppState::Connecting) {
+                            self.state = AppState::FindingMatch;
+                        }
+                    }
+                    ServerMessage2::UIUpdate { fen } => {
+                        info!("Board updated with FEN: {}", fen);
+                        // UI will automatically redraw with new FEN
+                    }
+                }
+            }
+        }
     }
 }
 
 impl eframe::App for ChessApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Process incoming network messages
+        self.process_network_messages();
+
+        // Get current game state
+        let game_state = self.game_state.lock().unwrap().clone();
+
         match self.state {
             AppState::MainMenu => {
                 egui::CentralPanel::default().show(ctx, |ui| {
@@ -216,283 +358,158 @@ impl eframe::App for ChessApp {
                         ui.heading("♞ Knightly ♞");
                         ui.add_space(30.0);
 
-                        if ui
-                            .add_sized([300.0, 60.0], egui::Button::new("Play"))
-                            .clicked()
-                        {
-                            let port = self.server_port.clone();
-                            info!("\nstarting connection\n");
+                        ui.horizontal(|ui| {
+                            ui.label("Username:");
+                            ui.text_edit_singleline(&mut self.username);
+                        });
 
-                            //create a TCPlistener with tokio and bind machine ip for connection
-                            tokio::spawn(async move {
-                                info!("tokoi");
-                                handle_connection(&port, self).await
-                            });
+                        ui.horizontal(|ui| {
+                            ui.label("Server Port:");
+                            ui.text_edit_singleline(&mut self.server_port);
+                        });
 
-                            self.state = AppState::InGame;
+                        ui.add_space(20.0);
+
+                        if ui.button("Connect & Play").clicked() {
+                            self.connect_to_server();
                         }
-                        ui.add_space(8.0);
 
-                        if ui
-                            .add_sized([300.0, 60.0], egui::Button::new("Settings"))
-                            .clicked()
-                        {
-                            self.enter_settings();
-                        }
-                        ui.add_space(8.0);
-
-                        if ui
-                            .add_sized([300.0, 60.0], egui::Button::new("Quit"))
-                            .clicked()
-                        {
+                        if ui.button("Quit").clicked() {
                             std::process::exit(0);
                         }
                     });
                 });
             }
 
-            AppState::Settings => {
+            AppState::Connecting => {
                 egui::CentralPanel::default().show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.heading("Settings");
-                        ui.add_space(30.0);
+                        ui.heading("Connecting to Server...");
+                        ui.add_space(20.0);
+                        ui.spinner();
+                    });
+                });
+            }
 
-                        // Fullscreen toggle
-                        ui.horizontal(|ui| {
-                            ui.label("Fullscreen:");
-                            if ui
-                                .checkbox(&mut self.pending_settings.fullscreen, "")
-                                .changed()
-                            {
-                                // If enabling fullscreen, we might want to disable resolution selection
-                            }
-                        });
-                        ui.add_space(10.0);
-
-                        // Resolution dropdown
-                        ui.horizontal(|ui| {
-                            ui.label("Resolution:");
-                            egui::ComboBox::new("resolution_combo", "")
-                                .selected_text(format!(
-                                    "{}x{}",
-                                    self.resolutions[self.pending_settings.selected_resolution].0,
-                                    self.resolutions[self.pending_settings.selected_resolution].1
-                                ))
-                                .show_ui(ui, |ui| {
-                                    for (i, &(width, height)) in self.resolutions.iter().enumerate()
-                                    {
-                                        ui.selectable_value(
-                                            &mut self.pending_settings.selected_resolution,
-                                            i,
-                                            format!("{}x{}", width, height),
-                                        );
-                                    }
-                                });
-                        });
-                        ui.add_space(10.0);
-
-                        // Server port input field
-                        ui.horizontal(|ui| {
-                            ui.label("Local Server Port:");
-                            ui.add(
-                                egui::TextEdit::singleline(&mut self.pending_settings.server_port)
-                                    .desired_width(100.0)
-                                    .hint_text("9001"),
-                            );
-                        });
-                        ui.add_space(30.0);
-
-                        // Apply and Cancel buttons
-                        ui.horizontal(|ui| {
-                            if ui
-                                .add_sized([140.0, 40.0], egui::Button::new("Apply"))
-                                .clicked()
-                            {
-                                self.apply_settings(ctx);
-                                self.state = AppState::MainMenu;
-                            }
-
-                            if ui
-                                .add_sized([140.0, 40.0], egui::Button::new("Cancel"))
-                                .clicked()
-                            {
-                                self.state = AppState::MainMenu;
-                            }
-                        });
+            AppState::FindingMatch => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading("Finding Match...");
+                        ui.add_space(20.0);
+                        ui.label("Waiting for an opponent...");
+                        ui.spinner();
                     });
                 });
             }
 
             AppState::InGame => {
+                // Draw menu bar
                 egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         if ui.button("Main Menu").clicked() {
-                            self.state = AppState::MainMenu;
-                        }
-                        if ui.button("Settings").clicked() {
-                            self.enter_settings();
-                        }
-                        if ui.button("New Game").clicked() {
                             *self = ChessApp::default();
-                            self.state = AppState::InGame;
                         }
+
+                        if ui.button("Resign").clicked() {
+                            if let Some(tx) = &self.tx_to_network {
+                                let _ = tx.send(ClientEvent::Resign);
+                            }
+                        }
+
                         ui.separator();
-                        ui.label(format!("Turn: {:?}", self.turn));
+
+                        if let Some(color) = &game_state.player_color {
+                            ui.label(format!("You are: {}", color));
+                        }
+
+                        if let Some(opponent) = &game_state.opponent_name {
+                            ui.label(format!("vs: {}", opponent));
+                        }
                     });
                 });
 
+                // Draw chess board
                 egui::CentralPanel::default().show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
-                        let full_avail = ui.available_rect_before_wrap();
-                        let board_tile = (full_avail.width().min(full_avail.height())) / 8.0;
-                        let board_size = board_tile * 8.0;
+                        let board = self.fen_to_board(&game_state.fen);
+                        let is_white = game_state
+                            .player_color
+                            .as_ref()
+                            .map_or(true, |c| c == "white");
 
-                        // Create a child UI at the board position
+                        let available_size = ui.available_size();
+                        let board_size = available_size.x.min(available_size.y) * 0.9;
+                        let tile_size = board_size / 8.0;
+
                         let (response, painter) = ui.allocate_painter(
                             egui::Vec2::new(board_size, board_size),
                             egui::Sense::click(),
                         );
 
-                        let board_rect = egui::Rect::from_center_size(
-                            full_avail.center(),
-                            egui::vec2(board_size, board_size),
-                        );
+                        let board_top_left = response.rect.left_top();
 
-                        // Draw the chess board
-                        if self.player_color == Some("white".to_string()) {
-                            let tile_size = board_size / 8.0;
-                            for row in 0..8 {
-                                for col in 0..8 {
-                                    let color = if (row + col) % 2 == 0 {
-                                        egui::Color32::from_rgb(217, 217, 217)
+                        // Draw board and pieces
+                        for row in 0..8 {
+                            for col in 0..8 {
+                                let (display_row, display_col) = if is_white {
+                                    (7 - row, col)
+                                } else {
+                                    (row, 7 - col)
+                                };
+
+                                let color = if (row + col) % 2 == 0 {
+                                    egui::Color32::from_rgb(240, 217, 181) // Light
+                                } else {
+                                    egui::Color32::from_rgb(181, 136, 99) // Dark
+                                };
+
+                                let rect = egui::Rect::from_min_size(
+                                    egui::Pos2::new(
+                                        board_top_left.x + col as f32 * tile_size,
+                                        board_top_left.y + row as f32 * tile_size,
+                                    ),
+                                    egui::Vec2::new(tile_size, tile_size),
+                                );
+
+                                painter.rect_filled(rect, 0.0, color);
+
+                                // Draw piece
+                                let piece_char = board[display_row][display_col];
+                                if piece_char != ' ' {
+                                    let symbol = self.chess_char_to_piece(piece_char);
+                                    let font_id = egui::FontId::proportional(tile_size * 0.8);
+                                    let text_color = if piece_char.is_uppercase() {
+                                        egui::Color32::WHITE
                                     } else {
-                                        egui::Color32::from_rgb(100, 97, 97)
+                                        egui::Color32::BLACK
                                     };
 
-                                    let rect = egui::Rect::from_min_size(
-                                        egui::Pos2::new(
-                                            board_rect.min.x + col as f32 * tile_size,
-                                            board_rect.min.y + row as f32 * tile_size,
-                                        ),
-                                        egui::Vec2::new(tile_size, tile_size),
+                                    painter.text(
+                                        rect.center(),
+                                        egui::Align2::CENTER_CENTER,
+                                        symbol,
+                                        font_id,
+                                        text_color,
                                     );
+                                }
 
-                                    painter.rect_filled(rect, 0.0, color);
-
-                                    // Draw piece
-                                    let piece = self.board[row][col];
-                                    if piece != Piece::Empty {
-                                        let symbol = piece.symbol();
-                                        let font_id = egui::FontId::proportional(tile_size * 0.75);
-                                        painter.text(
-                                            rect.center(),
-                                            egui::Align2::CENTER_CENTER,
-                                            symbol,
-                                            font_id,
-                                            if matches!(
-                                                piece,
-                                                Piece::King('w')
-                                                    | Piece::Queen('w')
-                                                    | Piece::Rook('w')
-                                                    | Piece::Bishop('w')
-                                                    | Piece::Knight('w')
-                                                    | Piece::Pawn('w')
-                                            ) {
-                                                egui::Color32::WHITE
-                                            } else {
-                                                egui::Color32::BLACK
-                                            },
-                                        );
-                                    }
-
-                                    // Draw selection highlight
-                                    if self.selected == Some((row, col)) {
+                                // Draw selection
+                                if let Some((sel_row, sel_col)) = self.selected_square {
+                                    if sel_row == display_row && sel_col == display_col {
                                         painter.rect_stroke(
                                             rect,
                                             0.0,
                                             egui::Stroke::new(3.0, egui::Color32::RED),
-                                            egui::StrokeKind::Inside,
+                                            egui::StrokeKind::Middle,
                                         );
-                                    }
-
-                                    // Handle clicks
-                                    if ui.ctx().input(|i| i.pointer.primary_clicked()) {
-                                        let click_pos =
-                                            ui.ctx().input(|i| i.pointer.interact_pos()).unwrap();
-                                        if rect.contains(click_pos) {
-                                            self.handle_click(row, col);
-                                        }
                                     }
                                 }
-                            }
-                        }
-                        if self.player_color == Some("black".to_string()) {
-                            {
-                                let tile_size = board_size / 8.0;
-                                for row in 0..8 {
-                                    for col in 0..8 {
-                                        let color = if (row + col) % 2 == 0 {
-                                            egui::Color32::from_rgb(217, 217, 217)
-                                        } else {
-                                            egui::Color32::from_rgb(100, 97, 97)
-                                        };
 
-                                        let rect = egui::Rect::from_min_size(
-                                            egui::Pos2::new(
-                                                board_rect.min.x + col as f32 * tile_size,
-                                                board_rect.min.y + row as f32 * tile_size,
-                                            ),
-                                            egui::Vec2::new(tile_size, tile_size),
-                                        );
-
-                                        painter.rect_filled(rect, 0.0, color);
-
-                                        // Draw piece
-                                        let piece = self.board[row][col];
-                                        if piece != Piece::Empty {
-                                            let symbol = piece.symbol();
-                                            let font_id =
-                                                egui::FontId::proportional(tile_size * 0.75);
-                                            painter.text(
-                                                rect.center(),
-                                                egui::Align2::CENTER_CENTER,
-                                                symbol,
-                                                font_id,
-                                                if matches!(
-                                                    piece,
-                                                    Piece::King('w')
-                                                        | Piece::Queen('w')
-                                                        | Piece::Rook('w')
-                                                        | Piece::Bishop('w')
-                                                        | Piece::Knight('w')
-                                                        | Piece::Pawn('w')
-                                                ) {
-                                                    egui::Color32::BLACK
-                                                } else {
-                                                    egui::Color32::WHITE
-                                                },
-                                            );
-                                        }
-
-                                        // Draw selection highlight
-                                        if self.selected == Some((row, col)) {
-                                            painter.rect_stroke(
-                                                rect,
-                                                0.0,
-                                                egui::Stroke::new(3.0, egui::Color32::RED),
-                                                egui::StrokeKind::Inside,
-                                            );
-                                        }
-
-                                        // Handle clicks
-                                        if ui.ctx().input(|i| i.pointer.primary_clicked()) {
-                                            let click_pos = ui
-                                                .ctx()
-                                                .input(|i| i.pointer.interact_pos())
-                                                .unwrap();
-                                            if rect.contains(click_pos) {
-                                                self.handle_click(row, col);
-                                            }
+                                // Handle clicks
+                                if response.clicked() {
+                                    if let Some(click_pos) = ui.ctx().pointer_interact_pos() {
+                                        if rect.contains(click_pos) {
+                                            self.handle_click(display_row, display_col);
                                         }
                                     }
                                 }
@@ -501,61 +518,28 @@ impl eframe::App for ChessApp {
                     });
                 });
             }
+
+            AppState::GameOver => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading("Game Over");
+                        ui.add_space(20.0);
+
+                        if let Some(reason) = &game_state.game_over {
+                            ui.label(format!("Result: {}", reason));
+                        }
+
+                        ui.add_space(20.0);
+
+                        if ui.button("Back to Main Menu").clicked() {
+                            *self = ChessApp::default();
+                        }
+                    });
+                });
+            }
         }
-    }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_initial_board_setup() {
-        let app = ChessApp::default();
-        assert!(matches!(app.board[0][0], Piece::Rook('b')));
-        assert!(matches!(app.board[7][0], Piece::Rook('w')));
-
-        assert!(matches!(app.board[1][0], Piece::Pawn('b')));
-        assert!(matches!(app.board[6][0], Piece::Pawn('w')));
-    }
-
-    #[test]
-    fn test_piece_symbols() {
-        assert_eq!(Piece::King('w').symbol(), "♔");
-        assert_eq!(Piece::King('b').symbol(), "♚");
-        assert_eq!(Piece::Empty.symbol(), "");
-    }
-
-    #[test]
-    fn test_piece_selection() {
-        let mut app = ChessApp::default();
-        app.handle_click(6, 0);
-        assert_eq!(app.selected, Some((6, 0)));
-        app.handle_click(6, 0);
-        assert_eq!(app.selected, None);
-    }
-
-    #[test]
-    fn test_piece_movement() {
-        let mut app = ChessApp::default();
-        // Select and move a piece
-        app.handle_click(6, 0); // Select white pawn
-        app.handle_click(5, 0); // Move to empty square
-        assert_eq!(app.board[6][0], Piece::Empty);
-        assert!(matches!(app.board[5][0], Piece::Pawn('w')));
-    }
-
-    #[test]
-    fn test_turn_switching() {
-        let mut app = ChessApp::default();
-        assert_eq!(app.turn, Turn::White);
-        app.handle_click(6, 0); // White selects
-        app.handle_click(5, 0); // White moves
-        assert_eq!(app.turn, Turn::Black); // Should now be Black's turn
-    }
-
-    #[test]
-    fn test_server_port_default() {
-        let app = ChessApp::default();
-        assert_eq!(app.server_port, "9001");
+        // Request repaint to keep UI responsive
+        ctx.request_repaint();
     }
 }

@@ -1,15 +1,18 @@
 use engine::{chessmove::ChessMove, gameend::GameEnd};
-use futures_util::StreamExt;
+use futures_util::{SinkExt, StreamExt};
 use local_ip_address::local_ip;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
-    error::Error,
     net::{IpAddr, Ipv4Addr},
+    sync::{Arc, Mutex},
 };
 use tokio_tungstenite::connect_async;
+use tungstenite::Message;
 use url::Url;
 use uuid::Uuid;
+
+use crate::{ChessApp, ClientEvent, SharedGameState};
 
 #[derive(Serialize, Deserialize)]
 pub enum ServerMessage2 {
@@ -46,7 +49,11 @@ fn get_ip_address() -> IpAddr {
     ip
 }
 
-pub async fn handle_connection(server_port: &str) -> anyhow::Result<()> {
+pub async fn handle_connection(
+    server_port: &str,
+    shared_state: SharedGameState,
+    ui_events: Arc<Mutex<Vec<ClientEvent>>>,
+) -> anyhow::Result<()> {
     let address = get_ip_address();
 
     //start main loop
@@ -61,7 +68,7 @@ pub async fn handle_connection(server_port: &str) -> anyhow::Result<()> {
     let (ws_stream, _) = connect_async(url).await?;
     let (mut write, mut read) = ws_stream.split();
 
-    let read_handle = while let Some(message) = read.next().await {
+    while let Some(message) = read.next().await {
         info!("connection");
         match message {
             Ok(msg) => {
@@ -69,7 +76,7 @@ pub async fn handle_connection(server_port: &str) -> anyhow::Result<()> {
                     let text = msg.to_text().unwrap();
                     info!("text: {}", text);
 
-                    if let Ok(parsed) = serde_json::from_str::<ServerMessage2>(text) {
+                    /*if let Ok(parsed) = serde_json::from_str::<ServerMessage2>(text) {
                         match parsed {
                             ServerMessage2::GameEnd { winner } => {}
                             ServerMessage2::UIUpdate { fen } => {}
@@ -77,12 +84,26 @@ pub async fn handle_connection(server_port: &str) -> anyhow::Result<()> {
                                 match_id,
                                 color,
                                 opponent_name,
-                            } => {}
+                            } => {
+                                //chess_app.player_color = Some(color);
+                            }
                             ServerMessage2::Ok { response } => {}
                             _ => {
                                 error!("Received unkown servermessage2");
                             }
                         }
+                    }*/
+
+                    if let Ok(parsed) = serde_json::from_str::<ServerMessage2>(text) {
+                        // Update shared state with server message
+                        shared_state.update_from_server_message(parsed);
+                    }
+
+                    // Send UI events to server
+                    let events = ui_events.lock().unwrap().drain(..).collect::<Vec<_>>();
+                    for event in events {
+                        let message = serde_json::to_string(&event)?;
+                        write.send(Message::Text(message)).await?;
                     }
                 }
             }
@@ -90,7 +111,7 @@ pub async fn handle_connection(server_port: &str) -> anyhow::Result<()> {
                 error!("Error receiving message: {}", e);
             }
         }
-    };
+    }
 
     Ok(())
 }
