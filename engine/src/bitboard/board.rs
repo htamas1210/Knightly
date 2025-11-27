@@ -196,4 +196,46 @@ impl Board {
        _  => ()
     }
   }
+  pub fn get_piece_character(&self, index: i32) -> Option<char> {
+    let sq = 1 << index;
+
+    if (self.bitboards[0] & sq) != 0 {
+      return Some('P');
+    }
+    if (self.bitboards[1] & sq) != 0 {
+      return Some('N');
+    }
+    if (self.bitboards[2] & sq) != 0 {
+      return Some('B');
+    }
+    if (self.bitboards[3] & sq) != 0 {
+      return Some('R');
+    }
+    if (self.bitboards[4] & sq) != 0 {
+      return Some('Q');
+    }
+    if (self.bitboards[5] & sq) != 0 {
+      return Some('K');
+    }
+    if (self.bitboards[6] & sq) != 0 {
+      return Some('p');
+    }
+    if (self.bitboards[7] & sq) != 0 {
+      return Some('n');
+    }
+    if (self.bitboards[8] & sq) != 0 {
+      return Some('b');
+    }
+    if (self.bitboards[9] & sq) != 0 {
+      return Some('r');
+    }
+    if (self.bitboards[10] & sq) != 0 {
+      return Some('q');
+    }
+    if (self.bitboards[11] & sq) != 0 {
+      return Some('k');
+    }
+
+    return None;
+  }
 }
