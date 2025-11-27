@@ -45,18 +45,6 @@ pub struct Step {
     pub to: String,
 }
 
-/*#[derive(Serialize, Deserialize, Debug)]
-struct ServerMessage {
-    #[serde(rename = "type")]
-    message_type: String,
-    player_id: Option<Uuid>,
-    match_id: Option<Uuid>,
-    opponent: Option<Uuid>,
-    color: Option<String>,
-    reason: Option<String>,
-    response: Option<String>,
-}*/
-
 #[derive(Serialize, Deserialize)]
 pub enum ServerMessage2 {
     GameEnd {

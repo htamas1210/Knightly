@@ -1,5 +1,5 @@
 use crate::connection::ServerMessage2;
-use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue, broadcast_to_match};
+use crate::connection::{ConnectionMap, GameMatch, MatchMap, WaitingQueue};
 use log::{error, info, warn};
 use rand::random;
 use uuid::Uuid;
@@ -119,7 +119,7 @@ impl MatchmakingSystem {
             };
 
             let _ = crate::connection::send_message_to_player_connection(
-                conn_map.get_mut(&white),
+                conn_map.get_mut(&black),
                 &serde_json::to_string(&message).unwrap(),
             )
             .await;
