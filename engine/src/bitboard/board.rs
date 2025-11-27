@@ -1,3 +1,5 @@
+use crate::bitboard::utils::notation_from_square_number;
+
 use super::utils::try_get_square_number_from_notation;
 
 pub struct Board {
@@ -169,6 +171,7 @@ impl Board {
         if let Some(piece) = self.get_piece_character(sq) {
           if empty > 0 {
             fen.push_str(&empty.to_string());
+            empty = 0;
           }
           fen.push(piece);
         } else {
@@ -178,7 +181,33 @@ impl Board {
           }
         }
       }
+      if row > 0 {
+        fen.push('/');
+      }
     }
+
+    fen.push(' ');
+    if self.side_to_move() == 0 { fen.push('w'); } else { fen.push('b'); }
+
+    fen.push(' ');
+    if self.castling_rights() == 0 {
+      fen.push('-');
+    } else {
+      if self.castling_rights() & (1 << 3) != 0 { fen.push('K'); }
+      if self.castling_rights() & (1 << 2) != 0 { fen.push('Q'); }
+      if self.castling_rights() & (1 << 1) != 0 { fen.push('k'); }
+      if self.castling_rights() & (1 << 0) != 0 { fen.push('q'); }
+    }
+
+    fen.push(' ');
+    if self.en_passant_square() == 0 {
+      fen.push('-');
+    } else {
+      let sq = self.en_passant_square().trailing_zeros();
+      fen.push_str(&notation_from_square_number(sq as u8));
+    }
+
+    fen.push_str(" 0 1");
 
     return fen;
   }
