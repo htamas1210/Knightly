@@ -639,12 +639,12 @@ mod tests {
         let app = ChessApp::default();
 
         // Test white pieces
-        assert_eq!(app.chess_char_to_piece('K'), "♔");
-        assert_eq!(app.chess_char_to_piece('Q'), "♕");
-        assert_eq!(app.chess_char_to_piece('R'), "♖");
-        assert_eq!(app.chess_char_to_piece('B'), "♗");
-        assert_eq!(app.chess_char_to_piece('N'), "♘");
-        assert_eq!(app.chess_char_to_piece('P'), "♙");
+        assert_eq!(app.chess_char_to_piece('K'), "♚");
+        assert_eq!(app.chess_char_to_piece('Q'), "♛");
+        assert_eq!(app.chess_char_to_piece('R'), "♜");
+        assert_eq!(app.chess_char_to_piece('B'), "♝");
+        assert_eq!(app.chess_char_to_piece('N'), "♞");
+        assert_eq!(app.chess_char_to_piece('P'), "♟︎");
 
         // Test black pieces
         assert_eq!(app.chess_char_to_piece('k'), "♚");
