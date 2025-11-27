@@ -1,4 +1,4 @@
-
+mod quiets;
 
 use super::bitmove::BitMoveType;
 use super::bitmove::BitMove;
