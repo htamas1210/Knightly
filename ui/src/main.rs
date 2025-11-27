@@ -20,7 +20,7 @@ async fn main() -> anyhow::Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_fullscreen(false)
-            .with_min_inner_size(egui::vec2(800.0, 600.0))
+            .with_min_inner_size(egui::vec2(800.0, 800.0))
             .with_inner_size(egui::vec2(1920.0, 1080.0)),
         ..Default::default()
     };
@@ -45,7 +45,6 @@ async fn main() -> anyhow::Result<(), eframe::Error> {
     )
 }
 
-// Server message types (from your connection.rs)
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerMessage2 {
     GameEnd {
@@ -64,7 +63,6 @@ pub enum ServerMessage2 {
     },
 }
 
-// Client event types (from your connection.rs)
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum ClientEvent {
@@ -209,10 +207,11 @@ impl ChessApp {
                                     ServerMessage2::MatchFound {
                                         color,
                                         opponent_name,
-                                        ..
+                                        match_id,
                                     } => {
                                         state.player_color = Some(color.clone());
                                         state.opponent_name = Some(opponent_name.clone());
+                                        state.match_id = Some(match_id.clone());
                                     }
                                     ServerMessage2::GameEnd { winner } => {
                                         state.game_over = Some(winner.clone());
@@ -254,6 +253,7 @@ impl ChessApp {
         if let Some((from_row, from_col)) = self.selected_square {
             // Send move to server
             if let Some(tx) = &self.tx_to_network {
+                // TODO: kinyerni a tenyleges kivalasztott babut
                 let chess_move = ChessMove::Quiet {
                     piece_type: engine::piecetype::PieceType::WhiteKing,
                     from_square: BoardSquare { x: 0, y: 1 },
@@ -297,12 +297,12 @@ impl ChessApp {
 
     fn chess_char_to_piece(&self, c: char) -> &'static str {
         match c {
-            'K' => "♔",
-            'Q' => "♕",
-            'R' => "♖",
-            'B' => "♗",
-            'N' => "♘",
-            'P' => "♙",
+            'K' => "♚",
+            'Q' => "♛",
+            'R' => "♜",
+            'B' => "♝",
+            'N' => "♞",
+            'P' => "♟︎",
             'k' => "♚",
             'q' => "♛",
             'r' => "♜",
@@ -386,6 +386,7 @@ impl eframe::App for ChessApp {
 
             AppState::Connecting => {
                 egui::CentralPanel::default().show(ctx, |ui| {
+                    // TODO: go back to menu btn
                     ui.vertical_centered(|ui| {
                         ui.heading("Connecting to Server...");
                         ui.add_space(20.0);
@@ -396,11 +397,18 @@ impl eframe::App for ChessApp {
 
             AppState::FindingMatch => {
                 egui::CentralPanel::default().show(ctx, |ui| {
+                    // TODO: go back to menu btn
+                    // TODO: how do we delete the player from the waiting queue
                     ui.vertical_centered(|ui| {
                         ui.heading("Finding Match...");
                         ui.add_space(20.0);
                         ui.label("Waiting for an opponent...");
                         ui.spinner();
+
+                        ui.add_space(20.0);
+                        if ui.button("cancel").clicked() {
+                            std::process::exit(0);
+                        }
                     });
                 });
             }
@@ -455,9 +463,9 @@ impl eframe::App for ChessApp {
                         for row in 0..8 {
                             for col in 0..8 {
                                 let (display_row, display_col) = if is_white {
-                                    (7 - row, col)
+                                    (row, col)
                                 } else {
-                                    (row, 7 - col)
+                                    (7 - row, 7 - col)
                                 };
 
                                 let color = if (row + col) % 2 == 0 {
