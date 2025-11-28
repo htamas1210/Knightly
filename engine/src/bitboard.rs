@@ -8,3 +8,4 @@ mod movegen;
 pub mod board;
 pub(in super) mod bitmove;
 pub(in super) mod movebuffer;
+pub(in super) mod makemove;

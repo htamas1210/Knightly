@@ -1,3 +1,5 @@
+use crate::bitboard::utils::notation_from_square_number;
+
 use super::utils::try_get_square_number_from_notation;
 
 pub struct Board {
@@ -12,6 +14,7 @@ pub struct Board {
 }
 
 impl Board {
+  pub const EMPTY_SQUARE: u8 = 12;
 
   pub fn new_clear() -> Self {
     let mut bit_board: Self = Self {
@@ -159,6 +162,57 @@ impl Board {
     return if self.side_to_move == 0 { self.bitboards[5].trailing_zeros() } else { self.bitboards[11].trailing_zeros() };
   }
 
+  pub fn fen(&self) -> String {
+    let mut fen = String::new();
+
+    for row in (0..8).rev() {
+      let mut empty = 0;
+      for col in 0..8 {
+        let sq = row * 8 + col;
+        if let Some(piece) = self.get_piece_character(sq) {
+          if empty > 0 {
+            fen.push_str(&empty.to_string());
+            empty = 0;
+          }
+          fen.push(piece);
+        } else {
+          empty += 1;
+          if col == 7 {
+            fen.push_str(&empty.to_string());
+          }
+        }
+      }
+      if row > 0 {
+        fen.push('/');
+      }
+    }
+
+    fen.push(' ');
+    if self.side_to_move() == 0 { fen.push('w'); } else { fen.push('b'); }
+
+    fen.push(' ');
+    if self.castling_rights() == 0 {
+      fen.push('-');
+    } else {
+      if self.castling_rights() & (1 << 3) != 0 { fen.push('K'); }
+      if self.castling_rights() & (1 << 2) != 0 { fen.push('Q'); }
+      if self.castling_rights() & (1 << 1) != 0 { fen.push('k'); }
+      if self.castling_rights() & (1 << 0) != 0 { fen.push('q'); }
+    }
+
+    fen.push(' ');
+    if self.en_passant_square() == 0 {
+      fen.push('-');
+    } else {
+      let sq = self.en_passant_square().trailing_zeros();
+      fen.push_str(&notation_from_square_number(sq as u8));
+    }
+
+    fen.push_str(" 0 1");
+
+    return fen;
+  }
+
   fn calc_occupancy(&mut self) {
     self.occupancy = [0u64; 3];
     for b in 0..6 {
@@ -195,5 +249,47 @@ impl Board {
       'K' => {self.bitboards[5] |= 1 << sq}
        _  => ()
     }
+  }
+  pub fn get_piece_character(&self, index: i32) -> Option<char> {
+    let sq = 1 << index;
+
+    if (self.bitboards[0] & sq) != 0 {
+      return Some('P');
+    }
+    if (self.bitboards[1] & sq) != 0 {
+      return Some('N');
+    }
+    if (self.bitboards[2] & sq) != 0 {
+      return Some('B');
+    }
+    if (self.bitboards[3] & sq) != 0 {
+      return Some('R');
+    }
+    if (self.bitboards[4] & sq) != 0 {
+      return Some('Q');
+    }
+    if (self.bitboards[5] & sq) != 0 {
+      return Some('K');
+    }
+    if (self.bitboards[6] & sq) != 0 {
+      return Some('p');
+    }
+    if (self.bitboards[7] & sq) != 0 {
+      return Some('n');
+    }
+    if (self.bitboards[8] & sq) != 0 {
+      return Some('b');
+    }
+    if (self.bitboards[9] & sq) != 0 {
+      return Some('r');
+    }
+    if (self.bitboards[10] & sq) != 0 {
+      return Some('q');
+    }
+    if (self.bitboards[11] & sq) != 0 {
+      return Some('k');
+    }
+
+    return None;
   }
 }

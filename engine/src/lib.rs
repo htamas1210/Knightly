@@ -43,8 +43,13 @@ pub fn is_game_over(fen: &str) -> Option<GameEnd> {
 }
 
 pub fn get_board_after_move(fen: &str, chess_move: &ChessMove) -> String {
+  let mut board = Board::build(fen);
+  let played_move = chess_move.to_bitmove();
+
   println!("get_board_after_move answered");
-  return String::from("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+  board.make_move(&played_move);
+
+  return board.fen();
 }
 
 #[cfg(test)]
