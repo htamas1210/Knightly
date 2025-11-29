@@ -4,6 +4,9 @@ use env_logger::Env;
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
+use std::os::unix::process::CommandExt;
+use std::path::Path;
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
@@ -82,6 +85,7 @@ struct GameState {
     opponent_name: Option<String>,
     match_id: Option<Uuid>,
     game_over: Option<String>,
+    available_moves: Option<Vec<ChessMove>>,
 }
 
 impl Default for GameState {
@@ -92,6 +96,7 @@ impl Default for GameState {
             opponent_name: None,
             match_id: None,
             game_over: None,
+            available_moves: None,
         }
     }
 }
@@ -99,6 +104,7 @@ impl Default for GameState {
 // UI state
 enum AppState {
     MainMenu,
+    PrivatePlayConnect,
     Connecting,
     FindingMatch,
     InGame,
@@ -110,7 +116,8 @@ struct ChessApp {
     game_state: Arc<Mutex<GameState>>,
     server_port: String,
     username: String,
-
+    server_ip: String,
+    start_local_server_instance: bool,
     // Channels for communication with network tasks
     tx_to_network: Option<mpsc::UnboundedSender<ClientEvent>>,
     rx_from_network: Option<mpsc::UnboundedReceiver<ServerMessage2>>,
@@ -129,6 +136,9 @@ impl Default for ChessApp {
             tx_to_network: None,
             rx_from_network: None,
             selected_square: None,
+            server_ip: "127.0.0.1".to_string(), // TODO: change to dns when we figure out hosting
+            // for the online server (reverse proxy?)
+            start_local_server_instance: false,
         }
     }
 }
@@ -138,6 +148,7 @@ impl ChessApp {
         let server_port = self.server_port.clone();
         let username = self.username.clone();
         let game_state = self.game_state.clone();
+        let server_address = self.server_ip.clone();
 
         // Create channels for communication
         let (tx_to_network, rx_from_ui) = mpsc::unbounded_channel();
@@ -150,8 +161,15 @@ impl ChessApp {
 
         // Spawn network connection task
         tokio::spawn(async move {
-            if let Err(e) =
-                Self::network_handler(server_port, username, rx_from_ui, tx_to_ui, game_state).await
+            if let Err(e) = Self::network_handler(
+                server_port,
+                server_address,
+                username,
+                rx_from_ui,
+                tx_to_ui,
+                game_state,
+            )
+            .await
             {
                 error!("Network handler error: {}", e);
             }
@@ -160,13 +178,14 @@ impl ChessApp {
 
     async fn network_handler(
         server_port: String,
+        server_ip: String,
         username: String,
         mut rx_from_ui: mpsc::UnboundedReceiver<ClientEvent>,
         tx_to_ui: mpsc::UnboundedSender<ServerMessage2>,
         game_state: Arc<Mutex<GameState>>,
     ) -> anyhow::Result<()> {
         // Build WebSocket URL
-        let server_address = format!("ws://127.0.0.1:{}", server_port);
+        let server_address = format!("ws://{}:{}", server_ip, server_port);
         let url = Url::parse(&server_address)?;
 
         info!("Connecting to: {}", server_address);
@@ -366,21 +385,62 @@ impl eframe::App for ChessApp {
                             ui.text_edit_singleline(&mut self.username);
                         });
 
-                        ui.horizontal(|ui| {
-                            ui.label("Server Port:");
-                            ui.text_edit_singleline(&mut self.server_port);
-                        });
-
                         ui.add_space(20.0);
 
-                        if ui.button("Connect & Play").clicked() {
+                        if ui.button("Online Play").clicked() {
+                            self.server_ip = "random.dns.com".to_string();
                             self.connect_to_server();
+                        }
+
+                        if ui.button("Private Play").clicked() {
+                            self.state = AppState::PrivatePlayConnect;
                         }
 
                         if ui.button("Quit").clicked() {
                             std::process::exit(0);
                         }
                     });
+                });
+            }
+
+            AppState::PrivatePlayConnect => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Server ip address");
+                            ui.text_edit_singleline(&mut self.server_ip);
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Server Port:");
+                            ui.text_edit_singleline(&mut self.server_port);
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.checkbox(&mut self.start_local_server_instance, "Host Server");
+                        });
+
+                        ui.add_space(20.0);
+
+                        if ui.button("Play").clicked() {
+                            if self.start_local_server_instance == true {
+                                // TODO: Spawn server instance here
+                                let path = if cfg!(windows) {
+                                    "./server.exe"
+                                } else {
+                                    "./server"
+                                };
+
+                                if !Path::new(path).exists() {
+                                    error!("Server binary does not exist, cfg: {}", path);
+                                } else {
+                                    let _ = Command::new(path).spawn();
+                                    std::thread::sleep(std::time::Duration::from_secs(1));
+                                }
+                            }
+                            self.connect_to_server();
+                        }
+                    })
                 });
             }
 
@@ -399,6 +459,7 @@ impl eframe::App for ChessApp {
                 egui::CentralPanel::default().show(ctx, |ui| {
                     // TODO: go back to menu btn
                     // TODO: how do we delete the player from the waiting queue
+                    // FIX: disconnect the player from the server which will clean up connection
                     ui.vertical_centered(|ui| {
                         ui.heading("Finding Match...");
                         ui.add_space(20.0);
