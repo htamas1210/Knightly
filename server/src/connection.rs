@@ -72,6 +72,7 @@ enum ClientEvent {
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
+    CloseConnection,
 }
 
 #[derive(Debug)]
@@ -329,7 +330,7 @@ pub async fn handle_connection(
                         }
                     };
 
-                    broadcast_to_match(
+                    let _ = broadcast_to_match(
                         &connections,
                         &matches,
                         connections
@@ -342,7 +343,11 @@ pub async fn handle_connection(
                         &serde_json::to_string(&fuck).unwrap(),
                     )
                     .await;
-                    clean_up_match(&matches, fuck_id);
+                    clean_up_match(&matches, fuck_id).await;
+                }
+                CloseConnection => {
+                    warn!("Closing connection for: {}", &player_id);
+                    break;
                 }
                 _ => {
                     warn!("Not known client event");

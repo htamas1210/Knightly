@@ -75,6 +75,7 @@ pub enum ClientEvent {
     Resign,
     Chat { text: String },
     RequestLegalMoves { fen: String },
+    CloseConnection,
 }
 
 // Game state
@@ -136,7 +137,7 @@ impl Default for ChessApp {
             tx_to_network: None,
             rx_from_network: None,
             selected_square: None,
-            server_ip: "127.0.0.1".to_string(), // TODO: change to dns when we figure out hosting
+            server_ip: "127.0.0.1".to_string(),
             // for the online server (reverse proxy?)
             start_local_server_instance: false,
         }
@@ -388,7 +389,8 @@ impl eframe::App for ChessApp {
                         ui.add_space(20.0);
 
                         if ui.button("Online Play").clicked() {
-                            self.server_ip = "random.dns.com".to_string();
+                            // TODO: change to dns
+                            self.server_ip = "127.0.0.1".to_string();
                             self.connect_to_server();
                         }
 
@@ -424,7 +426,6 @@ impl eframe::App for ChessApp {
 
                         if ui.button("Play").clicked() {
                             if self.start_local_server_instance == true {
-                                // TODO: Spawn server instance here
                                 let path = if cfg!(windows) {
                                     "./server.exe"
                                 } else {
@@ -446,20 +447,21 @@ impl eframe::App for ChessApp {
 
             AppState::Connecting => {
                 egui::CentralPanel::default().show(ctx, |ui| {
-                    // TODO: go back to menu btn
                     ui.vertical_centered(|ui| {
                         ui.heading("Connecting to Server...");
                         ui.add_space(20.0);
                         ui.spinner();
                     });
+
+                    if ui.button("Cancel").clicked() {
+                        info!("Returning to menu from before connecting to the server");
+                        self.state = AppState::MainMenu;
+                    }
                 });
             }
 
             AppState::FindingMatch => {
                 egui::CentralPanel::default().show(ctx, |ui| {
-                    // TODO: go back to menu btn
-                    // TODO: how do we delete the player from the waiting queue
-                    // FIX: disconnect the player from the server which will clean up connection
                     ui.vertical_centered(|ui| {
                         ui.heading("Finding Match...");
                         ui.add_space(20.0);
@@ -468,7 +470,11 @@ impl eframe::App for ChessApp {
 
                         ui.add_space(20.0);
                         if ui.button("cancel").clicked() {
-                            std::process::exit(0);
+                            if let Some(tx) = &self.tx_to_network {
+                                warn!("Closing connection to server, cancelled match findig!");
+                                tx.send(ClientEvent::CloseConnection);
+                                self.state = AppState::MainMenu;
+                            }
                         }
                     });
                 });
