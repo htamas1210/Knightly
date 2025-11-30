@@ -59,6 +59,9 @@ pub enum ServerMessage2 {
         color: String,
         opponent_name: String,
     },
+    LegalMoves {
+        moves: Vec<ChessMove>,
+    },
     Ok {
         response: Result<(), String>,
     },
@@ -288,9 +291,10 @@ pub async fn handle_connection(
                 RequestLegalMoves { fen } => {
                     info!("Requesting legal moves player: {}", &player_id);
                     let moves = get_available_moves(&fen);
+                    let message = ServerMessage2::LegalMoves { moves };
                     let _ = send_message_to_player_connection(
                         connections.lock().await.get_mut(&player_id),
-                        &serde_json::to_string(&moves).unwrap(),
+                        &serde_json::to_string(&message).unwrap(),
                     )
                     .await;
                     info!("Sent moves to player: {}", player_id);
