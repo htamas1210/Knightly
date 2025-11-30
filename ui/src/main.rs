@@ -61,6 +61,9 @@ pub enum ServerMessage2 {
         color: String,
         opponent_name: String,
     },
+    LegalMoves {
+        moves: Vec<ChessMove>,
+    },
     Ok {
         response: Result<(), String>,
     },
@@ -157,6 +160,8 @@ impl Default for ChessApp {
 
 impl ChessApp {
     fn connect_to_server(&mut self) {
+        self.state = AppState::Connecting;
+
         let server_port = self.server_port.clone();
         let username = self.username.clone();
         let game_state = self.game_state.clone();
@@ -168,8 +173,6 @@ impl ChessApp {
 
         self.tx_to_network = Some(tx_to_network);
         self.rx_from_network = Some(rx_from_network);
-
-        self.state = AppState::Connecting;
 
         // Spawn network connection task
         tokio::spawn(async move {
@@ -248,6 +251,9 @@ impl ChessApp {
                                     ServerMessage2::GameEnd { winner } => {
                                         state.game_over = Some(winner.clone());
                                     }
+                                    ServerMessage2::LegalMoves { moves } => {
+                                        state.available_moves = Some(moves.clone());
+                                    }
                                     _ => {}
                                 }
                             }
@@ -281,7 +287,7 @@ impl ChessApp {
         Ok(())
     }
 
-    fn handle_click(&mut self, row: usize, col: usize) {
+    fn handle_click(&mut self, row: usize, col: usize) -> Result<(), String> {
         if let Some((from_row, from_col)) = self.selected_square {
             // Send move to server
             if let Some(tx) = &self.tx_to_network {
@@ -291,8 +297,13 @@ impl ChessApp {
                 if self.game_state.lock().unwrap().turn_player != player_color {
                     warn!("it is not the current players turn!");
                     self.selected_square = None;
-                    return;
+                    return Err("Not the players turn".to_string());
                 }
+
+                warn!(
+                    "Moves: {:?}",
+                    self.game_state.lock().unwrap().available_moves
+                );
 
                 // TODO: kinyerni a tenyleges kivalasztott babut
                 let chess_move = ChessMove::Quiet {
@@ -315,8 +326,10 @@ impl ChessApp {
             }
 
             self.selected_square = None;
+            Ok(())
         } else {
             self.selected_square = Some((row, col));
+            Err("did not finish move".to_string())
         }
     }
 
@@ -391,6 +404,7 @@ impl ChessApp {
                             game_state.turn_player = Some(turn_player);
                         }
                     }
+                    _ => {}
                 }
             }
         }
@@ -503,7 +517,7 @@ impl eframe::App for ChessApp {
                         if ui.button("cancel").clicked() {
                             if let Some(tx) = &self.tx_to_network {
                                 warn!("Closing connection to server, cancelled match findig!");
-                                tx.send(ClientEvent::CloseConnection);
+                                let _ = tx.send(ClientEvent::CloseConnection);
                                 self.state = AppState::MainMenu;
                             }
                         }
@@ -618,7 +632,27 @@ impl eframe::App for ChessApp {
                                 if response.clicked() {
                                     if let Some(click_pos) = ui.ctx().pointer_interact_pos() {
                                         if rect.contains(click_pos) {
-                                            self.handle_click(display_row, display_col);
+                                            let res = self.handle_click(display_row, display_col);
+                                            match res {
+                                                Ok(_) => {
+                                                    if let Some(tx) = &self.tx_to_network {
+                                                        info!("requesting legal moves from server");
+                                                        let _ = tx.send(
+                                                            ClientEvent::RequestLegalMoves {
+                                                                fen: self
+                                                                    .game_state
+                                                                    .lock()
+                                                                    .unwrap()
+                                                                    .fen
+                                                                    .clone(),
+                                                            },
+                                                        );
+                                                    };
+                                                }
+                                                Err(e) => {
+                                                    error!("{}", e);
+                                                }
+                                            }
                                         }
                                     }
                                 }
