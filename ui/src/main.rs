@@ -14,7 +14,6 @@ use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<(), eframe::Error> {
-    // Set up logging
     let env = Env::default().filter_or("MY_LOG_LEVEL", "INFO");
     env_logger::init_from_env(env);
     warn!("Initialized logger");
@@ -500,7 +499,13 @@ impl eframe::App for ChessApp {
                             }
                             self.connect_to_server();
                         }
-                        
+                        ui.add_space(20.0);
+                        if ui.add_sized(
+                            egui::Vec2::new(button_width, button_height), 
+                            egui::Button::new(egui::RichText::new("Return to main menu").size(font_size))
+                        ).clicked(){
+                            self.state=AppState::MainMenu;
+                        }
                     })
                 });
             }
@@ -585,7 +590,6 @@ impl eframe::App for ChessApp {
                         );
 
                         let board_top_left = response.rect.left_top();
-
                         // Draw board and pieces
                         for row in 0..8 {
                             for col in 0..8 {
