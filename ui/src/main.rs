@@ -405,8 +405,22 @@ impl eframe::App for ChessApp {
         // Get current game state
         let game_state = self.game_state.lock().unwrap().clone();
 
+        let screen_size = ctx.screen_rect().size();
+        let base_size = screen_size.x.min(screen_size.y);
+
         match self.state {
             AppState::MainMenu => {
+                
+                
+                
+                
+                //proportional sizing
+                let button_width = base_size*0.4;
+                let button_height = base_size*0.1;
+                let font_size = base_size*0.025;
+                let heading_size=base_size*0.1;
+                let spacing_size = base_size*0.07;
+
                 egui::CentralPanel::default().show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.heading("♞ Knightly ♞");
@@ -418,18 +432,25 @@ impl eframe::App for ChessApp {
                         });
 
                         ui.add_space(20.0);
-
-                        if ui.button("Online Play").clicked() {
-                            // TODO: change to dns
+                        if ui.add_sized(
+                            egui::Vec2::new(button_width, button_height), 
+                            egui::Button::new(egui::RichText::new("Online Play").size(font_size))
+                        ).clicked() {
                             self.server_ip = "127.0.0.1".to_string();
                             self.connect_to_server();
                         }
-
-                        if ui.button("Private Play").clicked() {
+                        ui.add_space(20.0);
+                        if ui.add_sized(
+                            egui::Vec2::new(button_width, button_height), 
+                            egui::Button::new(egui::RichText::new("Private Play").size(font_size))
+                        ).clicked() {
                             self.state = AppState::PrivatePlayConnect;
                         }
-
-                        if ui.button("Quit").clicked() {
+                        ui.add_space(20.0);
+                        if ui.add_sized(
+                            egui::Vec2::new(button_width, button_height), 
+                            egui::Button::new(egui::RichText::new("Quit").size(font_size))
+                        ).clicked() {
                             std::process::exit(0);
                         }
                     });
@@ -437,6 +458,11 @@ impl eframe::App for ChessApp {
             }
 
             AppState::PrivatePlayConnect => {
+                let button_width = base_size*0.4;
+                let button_height = base_size*0.1;
+                let font_size = base_size*0.025;
+                let heading_size=base_size*0.1;
+                let spacing_size = base_size*0.07;
                 egui::CentralPanel::default().show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.horizontal(|ui| {
@@ -454,8 +480,10 @@ impl eframe::App for ChessApp {
                         });
 
                         ui.add_space(20.0);
-
-                        if ui.button("Play").clicked() {
+                        if ui.add_sized(
+                            egui::Vec2::new(button_width, button_height), 
+                            egui::Button::new(egui::RichText::new("Play").size(font_size))
+                        ).clicked() {
                             if self.start_local_server_instance == true {
                                 let path = if cfg!(windows) {
                                     "./server.exe"
@@ -472,6 +500,7 @@ impl eframe::App for ChessApp {
                             }
                             self.connect_to_server();
                         }
+                        
                     })
                 });
             }
@@ -867,6 +896,7 @@ mod tests {
         let new_fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1".to_string();
         let message = ServerMessage2::UIUpdate {
             fen: new_fen.clone(),
+            turn_player: "white".to_string(),
         };
 
         tx.send(message).unwrap();
@@ -950,7 +980,7 @@ mod tests {
             to_square: BoardSquare { x: 2, y: 2 },
             promotion_piece: None,
         };
-        let move_event = ClientEvent::Move { step: chess_move };
+        let move_event = ClientEvent::Move { step: chess_move, turn_player:"white".to_string() };
         let serialized = serde_json::to_string(&move_event).unwrap();
         assert!(serialized.contains("Move"));
 
@@ -992,7 +1022,7 @@ mod tests {
             r#"{"UIUpdate":{"fen":"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"}}"#;
         let message: ServerMessage2 = serde_json::from_str(ui_update_json).unwrap();
         match message {
-            ServerMessage2::UIUpdate { fen } => {
+            ServerMessage2::UIUpdate { fen , turn_player} => {
                 assert!(fen.contains("rnbqkbnr"));
             }
             _ => panic!("Expected UIUpdate message"),
