@@ -4,7 +4,6 @@ use env_logger::Env;
 use futures_util::{SinkExt, StreamExt};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -55,6 +54,7 @@ pub enum ServerMessage2 {
     },
     UIUpdate {
         fen: String,
+        turn_player: String,
     },
     MatchFound {
         match_id: Uuid,
@@ -69,12 +69,21 @@ pub enum ServerMessage2 {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum ClientEvent {
-    Join { username: String },
+    Join {
+        username: String,
+    },
     FindMatch,
-    Move { step: ChessMove },
+    Move {
+        step: ChessMove,
+        turn_player: String,
+    },
     Resign,
-    Chat { text: String },
-    RequestLegalMoves { fen: String },
+    Chat {
+        text: String,
+    },
+    RequestLegalMoves {
+        fen: String,
+    },
     CloseConnection,
 }
 
@@ -87,6 +96,7 @@ struct GameState {
     match_id: Option<Uuid>,
     game_over: Option<String>,
     available_moves: Option<Vec<ChessMove>>,
+    turn_player: Option<String>,
 }
 
 impl Default for GameState {
@@ -98,6 +108,7 @@ impl Default for GameState {
             match_id: None,
             game_over: None,
             available_moves: None,
+            turn_player: Some("white".to_string()),
         }
     }
 }
@@ -138,7 +149,7 @@ impl Default for ChessApp {
             rx_from_network: None,
             selected_square: None,
             server_ip: "127.0.0.1".to_string(),
-            // for the online server (reverse proxy?)
+            // TODO: for the online server (reverse proxy?)
             start_local_server_instance: false,
         }
     }
@@ -221,8 +232,9 @@ impl ChessApp {
                             // Update game state
                             if let Ok(mut state) = game_state_clone.lock() {
                                 match &server_msg {
-                                    ServerMessage2::UIUpdate { fen } => {
+                                    ServerMessage2::UIUpdate { fen, turn_player } => {
                                         state.fen = fen.clone();
+                                        state.turn_player = Some(turn_player.clone());
                                     }
                                     ServerMessage2::MatchFound {
                                         color,
@@ -273,6 +285,15 @@ impl ChessApp {
         if let Some((from_row, from_col)) = self.selected_square {
             // Send move to server
             if let Some(tx) = &self.tx_to_network {
+                let player_color = self.game_state.lock().unwrap().player_color.clone();
+
+                //check if its the players turn
+                if self.game_state.lock().unwrap().turn_player != player_color {
+                    warn!("it is not the current players turn!");
+                    self.selected_square = None;
+                    return;
+                }
+
                 // TODO: kinyerni a tenyleges kivalasztott babut
                 let chess_move = ChessMove::Quiet {
                     piece_type: engine::piecetype::PieceType::WhiteKing,
@@ -280,12 +301,21 @@ impl ChessApp {
                     to_square: BoardSquare { x: 2, y: 2 },
                     promotion_piece: None,
                 };
-                let move_event = ClientEvent::Move { step: chess_move };
+
+                let move_event = ClientEvent::Move {
+                    step: chess_move,
+                    turn_player: if player_color == Some("white".to_string()) {
+                        "black".to_string()
+                    } else {
+                        "white".to_string()
+                    },
+                };
+
                 let _ = tx.send(move_event);
             }
+
             self.selected_square = None;
         } else {
-            // Select square
             self.selected_square = Some((row, col));
         }
     }
@@ -353,11 +383,12 @@ impl ChessApp {
                             self.state = AppState::FindingMatch;
                         }
                     }
-                    ServerMessage2::UIUpdate { fen } => {
+                    ServerMessage2::UIUpdate { fen, turn_player } => {
                         info!("Board updated with FEN: {}", fen);
                         // UI will automatically redraw with new FEN
                         if let Ok(mut game_state) = self.game_state.lock() {
                             game_state.fen = fen;
+                            game_state.turn_player = Some(turn_player);
                         }
                     }
                 }

@@ -52,6 +52,7 @@ pub enum ServerMessage2 {
     },
     UIUpdate {
         fen: String,
+        turn_player: String,
     },
     MatchFound {
         match_id: Uuid,
@@ -66,12 +67,21 @@ pub enum ServerMessage2 {
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum ClientEvent {
-    Join { username: String },
+    Join {
+        username: String,
+    },
     FindMatch,
-    Move { step: ChessMove },
+    Move {
+        step: ChessMove,
+        turn_player: String,
+    },
     Resign,
-    Chat { text: String },
-    RequestLegalMoves { fen: String },
+    Chat {
+        text: String,
+    },
+    RequestLegalMoves {
+        fen: String,
+    },
     CloseConnection,
 }
 
@@ -214,7 +224,7 @@ pub async fn handle_connection(
                     info!("Appended {} to the waiting queue", player_id);
                     info!("queue {:?}", wait_queue);
                 }
-                Move { step } => {
+                Move { step, turn_player } => {
                     let match_id = connections
                         .lock()
                         .await
@@ -240,6 +250,7 @@ pub async fn handle_connection(
                             .unwrap()
                             .board_state
                             .clone(),
+                        turn_player: turn_player,
                     };
 
                     let _ = broadcast_to_match(
@@ -266,7 +277,7 @@ pub async fn handle_connection(
                                     &serde_json::to_string(&message).unwrap(),
                                 )
                                 .await;
-                                clean_up_match(&matches, &match_id);
+                                clean_up_match(&matches, &match_id).await;
                             }
                             None => {
                                 info!("No winner match continues. Id: {}", &match_id);
