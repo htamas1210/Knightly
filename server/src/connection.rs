@@ -193,6 +193,13 @@ pub async fn handle_connection(
 
     info!("id: {}", &player_id);
 
+    error!("\n\n\n");
+    println!(
+        "{:?}",
+        engine::get_available_moves("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    );
+    error!("\n\n\n");
+
     // Message processing loop
     while let Some(Ok(message)) = read.next().await {
         if message.is_text() {

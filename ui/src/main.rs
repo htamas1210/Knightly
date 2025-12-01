@@ -104,13 +104,16 @@ struct GameState {
 
 impl Default for GameState {
     fn default() -> Self {
+        let cuccfck: Vec<ChessMove> =
+            engine::get_available_moves("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
         Self {
             fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
             player_color: None,
             opponent_name: None,
             match_id: None,
             game_over: None,
-            available_moves: None,
+            available_moves: Some(cuccfck),
             turn_player: Some("white".to_string()),
         }
     }
@@ -305,16 +308,80 @@ impl ChessApp {
                     self.game_state.lock().unwrap().available_moves
                 );
 
-                // TODO: kinyerni a tenyleges kivalasztott babut
-                let chess_move = ChessMove::Quiet {
-                    piece_type: engine::piecetype::PieceType::WhiteKing,
-                    from_square: BoardSquare { x: 0, y: 1 },
-                    to_square: BoardSquare { x: 2, y: 2 },
-                    promotion_piece: None,
+                let from = BoardSquare {
+                    x: from_col,
+                    y: 7 - from_row,
                 };
 
+                let to = BoardSquare { x: col, y: 7 - row };
+
+                warn!("to: {:?}, from: {:?}", to, from);
+
+                let chessmove: Option<ChessMove> =
+                    match self.game_state.lock().unwrap().available_moves.clone() {
+                        Some(moves) => moves
+                            .into_iter()
+                            .filter(|x| match x {
+                                ChessMove::Quiet {
+                                    piece_type,
+                                    from_square,
+                                    to_square,
+                                    promotion_piece,
+                                } => {
+                                    return from_square.x == from.x
+                                        && from_square.y == from.y
+                                        && to_square.x == to.x
+                                        && to_square.y == to.y;
+                                }
+                                ChessMove::EnPassant {
+                                    pawn_type,
+                                    from_square,
+                                    to_square,
+                                    captured_piece,
+                                    captured_from,
+                                } => {
+                                    return from_square.x == from.x
+                                        && from_square.y == from.y
+                                        && to_square.x == to.x
+                                        && to_square.y == to.y;
+                                }
+                                ChessMove::Castle {
+                                    king_type,
+                                    king_from,
+                                    king_to,
+                                    rook_type,
+                                    rook_from,
+                                    rook_to,
+                                } => {
+                                    return king_from.x == from.x
+                                        && king_from.y == from.y
+                                        && king_to.x == to.x
+                                        && king_to.y == to.y;
+                                }
+                                ChessMove::Capture {
+                                    piece_type,
+                                    from_square,
+                                    to_square,
+                                    captured_piece,
+                                    promotion_piece,
+                                } => {
+                                    return from_square.x == from.x
+                                        && from_square.y == from.y
+                                        && to_square.x == to.x
+                                        && to_square.y == to.y;
+                                }
+                            })
+                            .next(),
+                        None => {
+                            error!("No moves found");
+                            None
+                        }
+                    };
+
+                warn!("\n\nFound move: {:?}\n\n", chessmove);
+
                 let move_event = ClientEvent::Move {
-                    step: chess_move,
+                    step: chessmove.unwrap(),
                     turn_player: if player_color == Some("white".to_string()) {
                         "black".to_string()
                     } else {
@@ -399,10 +466,10 @@ impl ChessApp {
                     ServerMessage2::UIUpdate { fen, turn_player } => {
                         info!("Board updated with FEN: {}", fen);
                         // UI will automatically redraw with new FEN
-                        if let Ok(mut game_state) = self.game_state.lock() {
+                        /*if let Ok(mut game_state) = self.game_state.lock() {
                             game_state.fen = fen;
                             game_state.turn_player = Some(turn_player);
-                        }
+                        }*/
                     }
                     _ => {}
                 }
