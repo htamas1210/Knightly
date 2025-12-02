@@ -122,9 +122,14 @@ enum AppState {
     FindingMatch,
     InGame,
     GameOver,
+    Settings,
 }
 
 struct ChessApp {
+    fullscreen: bool,
+    resolutions: Vec<(u32, u32)>,
+    pending_settings: PendingSettings,
+    selected_resolution: usize,
     state: AppState,
     game_state: Arc<Mutex<GameState>>,
     server_port: String,
@@ -134,14 +139,30 @@ struct ChessApp {
     // Channels for communication with network tasks
     tx_to_network: Option<mpsc::UnboundedSender<ClientEvent>>,
     rx_from_network: Option<mpsc::UnboundedReceiver<ServerMessage2>>,
-
     // UI state
     selected_square: Option<(usize, usize)>,
+}
+
+#[derive(Default)]
+struct PendingSettings {
+    fullscreen: bool,
+    selected_resolution: usize,
+    server_port: String,
 }
 
 impl Default for ChessApp {
     fn default() -> Self {
         Self {
+            fullscreen: false,
+            resolutions: vec![
+                (1280, 720),
+                (1600, 900),
+                (1920, 1080),
+                (2560, 1440),
+                (3840, 2160),
+            ],
+            pending_settings: PendingSettings::default(),
+            selected_resolution: 2,
             state: AppState::MainMenu,
             game_state: Arc::new(Mutex::new(GameState::default())),
             server_port: "9001".to_string(),
@@ -150,6 +171,7 @@ impl Default for ChessApp {
             rx_from_network: None,
             selected_square: None,
             server_ip: "127.0.0.1".to_string(),
+            
             // TODO: for the online server (reverse proxy?)
             start_local_server_instance: false,
         }
@@ -188,7 +210,19 @@ impl ChessApp {
             }
         });
     }
-
+    fn apply_settings(&mut self, ctx: &egui::Context) {
+        self.fullscreen = self.pending_settings.fullscreen;
+        self.selected_resolution = self.pending_settings.selected_resolution;
+        self.server_port = self.pending_settings.server_port.clone();
+        
+        if let Some(resolution) = self.resolutions.get(self.selected_resolution) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(
+                egui::Vec2::new(resolution.0 as f32, resolution.1 as f32)
+            ));
+        }
+        
+        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(self.fullscreen));
+    }
     async fn network_handler(
         server_port: String,
         server_ip: String,
@@ -449,6 +483,16 @@ impl eframe::App for ChessApp {
                         }
                         ui.add_space(20.0);
                         if ui.add_sized(
+                            egui::Vec2::new(button_width,button_height),
+                            egui::Button::new(egui::RichText::new("Settings").size(font_size))
+                        ).clicked(){
+                                self.state = AppState::Settings;
+                        }
+                            
+                        
+
+                        ui.add_space(20.0);
+                        if ui.add_sized(
                             egui::Vec2::new(button_width, button_height), 
                             egui::Button::new(egui::RichText::new("Quit").size(font_size))
                         ).clicked() {
@@ -457,7 +501,56 @@ impl eframe::App for ChessApp {
                     });
                 });
             }
+            AppState::Settings => {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading("Settings");
+                        ui.add_space(30.0);
 
+                        // Fullscreen toggle
+                        ui.horizontal(|ui| {
+                            ui.label("Fullscreen:");
+                            if ui.checkbox(&mut self.pending_settings.fullscreen, "").changed() {
+                                // If enabling fullscreen, we might want to disable resolution selection
+                            }
+                        });
+                        ui.add_space(10.0);
+
+                        // Resolution dropdown
+                        ui.horizontal(|ui| {
+                            ui.label("Resolution:");
+                            egui::ComboBox::new("resolution_combo", "")
+                                .selected_text(format!(
+                                    "{}x{}",
+                                    self.resolutions[self.pending_settings.selected_resolution].0,
+                                    self.resolutions[self.pending_settings.selected_resolution].1
+                                ))
+                                .show_ui(ui, |ui| {
+                                    for (i, &(width, height)) in self.resolutions.iter().enumerate() {
+                                        ui.selectable_value(
+                                            &mut self.pending_settings.selected_resolution,
+                                            i,
+                                            format!("{}x{}", width, height),
+                                        );
+                                    }
+                                });
+                        });
+                        ui.add_space(30.0);
+
+                        // Apply and Cancel buttons
+                        ui.horizontal(|ui| {
+                            if ui.add_sized([140.0, 40.0], egui::Button::new("Apply")).clicked() {
+                                self.apply_settings(ctx);
+                                self.state = AppState::MainMenu;
+                            }
+                            
+                            if ui.add_sized([140.0, 40.0], egui::Button::new("Cancel")).clicked() {
+                                self.state = AppState::MainMenu;
+                            }
+                        });
+                    });
+                });
+            }
             AppState::PrivatePlayConnect => {
                 let button_width = base_size*0.4;
                 let button_height = base_size*0.1;
