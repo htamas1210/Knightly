@@ -803,189 +803,197 @@ impl eframe::App for ChessApp {
             });
         });
 
-
     // Main content area with chess board and move history
     egui::CentralPanel::default()
-    .frame(egui::Frame::default().fill(background_color))
-    .show(ctx, |ui| {
-        let total_width = ui.available_width();
-        let total_height = ui.available_height();
-        
-        // Calculate sizes
-        let board_max_width = total_width * 0.75;
-        let board_max_height = total_height * 0.95;
-        let board_size = board_max_width.min(board_max_height);
-        let history_width = total_width * 0.20;
-        
-        // Total width of both elements plus spacing
-        let total_content_width = board_size + 5.0 + history_width;
-
-        // Center the entire content horizontally and vertically
-        ui.vertical_centered(|ui| {
-            ui.horizontal_centered(|ui| {
-                // Chess board (left side)
-                ui.vertical(|ui| {
-                    let (board_response, board_painter) = ui.allocate_painter(
-                        egui::Vec2::new(board_size, board_size),
-                        egui::Sense::click(),
-                    );
-
-                    let board = self.fen_to_board(&game_state.fen);
-                    let is_white = game_state
-                        .player_color
-                        .as_ref()
-                        .map_or(true, |c| c == "white");
-                    let tile_size = board_size / 8.0;
-                    let board_top_left = board_response.rect.left_top();
-
-                    // Draw board and pieces
-                    for row in 0..8 {
-                        for col in 0..8 {
-                            let (display_row, display_col) = if is_white {
-                                (row, col)
-                            } else {
-                                (7 - row, 7 - col)
-                            };
-
-                            let color = if (row + col) % 2 == 0 {
-                                egui::Color32::from_rgb(240, 217, 181) // Light
-                            } else {
-                                egui::Color32::from_rgb(181, 136, 99) // Dark
-                            };
-
-                            let rect = egui::Rect::from_min_size(
-                                egui::Pos2::new(
-                                    board_top_left.x + col as f32 * tile_size,
-                                    board_top_left.y + row as f32 * tile_size,
-                                ),
-                                egui::Vec2::new(tile_size, tile_size),
+        .frame(egui::Frame::default().fill(background_color))
+        .show(ctx, |ui| {
+            let total_width = ui.available_width();
+            let total_height = ui.available_height();
+            
+            // Calculate sizes
+            let board_max_width = total_width * 0.75;
+            let board_max_height = total_height * 0.95;
+            let board_size = board_max_width.min(board_max_height);
+            let history_width = total_width * 0.20;
+            
+            // Add margin around the board (20 pixels on each side)
+            let board_margin = 20.0;
+            let effective_board_size = board_size - 2.0 * board_margin;
+            
+            // Center the entire content horizontally and vertically
+            ui.vertical_centered(|ui| {
+                ui.horizontal_centered(|ui| {
+                    // Chess board with margin (left side)
+                    ui.vertical(|ui| {
+                        // Add vertical spacing above the board
+                        ui.add_space(board_margin);
+                        
+                        ui.horizontal(|ui| {
+                            // Add horizontal spacing to the left of the board
+                            ui.add_space(board_margin);
+                            
+                            let (board_response, board_painter) = ui.allocate_painter(
+                                egui::Vec2::new(effective_board_size, effective_board_size),
+                                egui::Sense::click(),
                             );
 
-                            board_painter.rect_filled(rect, 0.0, color);
+                            let board = self.fen_to_board(&game_state.fen);
+                            let is_white = game_state
+                                .player_color
+                                .as_ref()
+                                .map_or(true, |c| c == "white");
+                            let tile_size = effective_board_size / 8.0;
+                            let board_top_left = board_response.rect.left_top();
 
-                            // Draw piece
-                            let piece_char = board[display_row][display_col];
-                            if piece_char != ' ' {
-                                let symbol = self.chess_char_to_piece(piece_char);
-                                let font_id = egui::FontId::proportional(tile_size * 0.8);
-                                let text_color = if piece_char.is_uppercase() {
-                                    egui::Color32::WHITE
-                                } else {
-                                    egui::Color32::BLACK
-                                };
+                            // Draw board and pieces
+                            for row in 0..8 {
+                                for col in 0..8 {
+                                    let (display_row, display_col) = if is_white {
+                                        (row, col)
+                                    } else {
+                                        (7 - row, 7 - col)
+                                    };
 
-                                board_painter.text(
-                                    rect.center(),
-                                    egui::Align2::CENTER_CENTER,
-                                    symbol,
-                                    font_id,
-                                    text_color,
-                                );
-                            }
+                                    let color = if (row + col) % 2 == 0 {
+                                        egui::Color32::from_rgb(240, 217, 181) // Light
+                                    } else {
+                                        egui::Color32::from_rgb(181, 136, 99) // Dark
+                                    };
 
-                            // Draw selection
-                            if let Some((sel_row, sel_col)) = self.selected_square {
-                                if sel_row == display_row && sel_col == display_col {
-                                    board_painter.rect_stroke(
-                                        rect,
-                                        0.0,
-                                        egui::Stroke::new(3.0, egui::Color32::RED),
-                                        egui::StrokeKind::Inside,
+                                    let rect = egui::Rect::from_min_size(
+                                        egui::Pos2::new(
+                                            board_top_left.x + col as f32 * tile_size,
+                                            board_top_left.y + row as f32 * tile_size,
+                                        ),
+                                        egui::Vec2::new(tile_size, tile_size),
                                     );
-                                }
-                            }
 
-                            // Handle clicks
-                            if board_response.clicked() {
-                                if let Some(click_pos) = ui.ctx().pointer_interact_pos() {
-                                    if rect.contains(click_pos) {
-                                        self.handle_click(display_row, display_col);
+                                    board_painter.rect_filled(rect, 0.0, color);
+
+                                    // Draw piece
+                                    let piece_char = board[display_row][display_col];
+                                    if piece_char != ' ' {
+                                        let symbol = self.chess_char_to_piece(piece_char);
+                                        let font_id = egui::FontId::proportional(tile_size * 0.8);
+                                        let text_color = if piece_char.is_uppercase() {
+                                            egui::Color32::WHITE
+                                        } else {
+                                            egui::Color32::BLACK
+                                        };
+
+                                        board_painter.text(
+                                            rect.center(),
+                                            egui::Align2::CENTER_CENTER,
+                                            symbol,
+                                            font_id,
+                                            text_color,
+                                        );
+                                    }
+
+                                    // Draw selection
+                                    if let Some((sel_row, sel_col)) = self.selected_square {
+                                        if sel_row == display_row && sel_col == display_col {
+                                            board_painter.rect_stroke(
+                                                rect,
+                                                0.0,
+                                                egui::Stroke::new(3.0, egui::Color32::RED),
+                                                egui::StrokeKind::Inside,
+                                            );
+                                        }
+                                    }
+
+                                    // Handle clicks
+                                    if board_response.clicked() {
+                                        if let Some(click_pos) = ui.ctx().pointer_interact_pos() {
+                                            if rect.contains(click_pos) {
+                                                self.handle_click(display_row, display_col);
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
-                });
-
-                // Add spacing between board and move history
-                ui.add_space(15.0);
-
-                // Move History (right side) - match the board height
-                ui.vertical(|ui| {
-                    egui::Frame::default()
-                        .fill(if self.dark_mode {
-                            egui::Color32::from_rgb(60, 60, 60)
-                        } else {
-                            egui::Color32::from_rgb(240, 240, 240)
-                        })
-                        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(200, 200, 200)))
-                        .inner_margin(egui::Margin::same(8))
-                        .show(ui, |ui| {
-                            ui.set_width(history_width);
-                            ui.set_height(board_size); // Match board height
                             
-                            ui.vertical_centered(|ui| {
-                                ui.heading("Move History");
-                                ui.separator();
-                                
-                                // Scroll area for move history
-                                egui::ScrollArea::vertical()
-                                .max_height(board_size - 50.0)
-                                .show(ui, |ui| {
-                                    if let Ok(game_state) = self.game_state.lock() {
-                                        for (i, move_text) in game_state.move_history.iter().enumerate() {
-                                            ui.horizontal(|ui| {
-                                                // Alternate background based on dark mode
-                                                if i % 2 == 0 {
-                                                    ui.visuals_mut().widgets.noninteractive.bg_fill = 
-                                                        if self.dark_mode {
-                                                            egui::Color32::from_rgb(70, 70, 70)
-                                                        } else {
-                                                            egui::Color32::from_rgb(250, 250, 250)
-                                                        };
-                                                } else {
-                                                    ui.visuals_mut().widgets.noninteractive.bg_fill = 
-                                                        if self.dark_mode {
-                                                            egui::Color32::from_rgb(50, 50, 50)
-                                                        } else {
-                                                            egui::Color32::from_rgb(230, 230, 230)
-                                                        };
-                                                }
-                                                
-                                                // Move text color
-                                                ui.label(egui::RichText::new(move_text.to_string())
-                                                    .size(16.0)
-                                                    .color(text_color));
-                                                
-                                                if ui.small_button("📋").clicked() {
-                                                    info!("Copy move: {}", move_text);
-                                                }
-                                            });
-                                                
-                                                if i < game_state.move_history.len() - 1 {
-                                                    ui.add_space(2.0);
-                                                }
-                                            }
-                                            
-                                            if game_state.move_history.is_empty() {
-                                            ui.vertical_centered(|ui| {
-                                                ui.add_space(20.0);
-                                                ui.label(egui::RichText::new("No moves yet")
-                                                    .size(16.0)
-                                                    .color(text_color));
-                                                ui.label(egui::RichText::new("Game will start soon...")
-                                                    .size(14.0)
-                                                    .color(text_color));
-                                            });
-                                            }
-                                        }
-                                    });
-                            });
+                            // Add horizontal spacing to the right of the board
+                            ui.add_space(board_margin);
                         });
+                        
+                        // Add vertical spacing below the board
+                        ui.add_space(board_margin);
+                    });
+
+                    // Add spacing between board and move history
+                    ui.add_space(15.0);
+
+                    // Move History (right side) - match the board height including margins
+                    ui.vertical(|ui| {
+                        egui::Frame::default()
+                            .fill(if self.dark_mode {
+                                egui::Color32::from_rgb(60, 60, 60)
+                            } else {
+                                egui::Color32::from_rgb(240, 240, 240)
+                            })
+                            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(200, 200, 200)))
+                            .inner_margin(egui::Margin::same(8))
+                            .show(ui, |ui| {
+                                ui.set_width(history_width);
+                                ui.set_height(board_size); // Match total board height including margins
+                                
+                                ui.vertical_centered(|ui| {
+                                    ui.heading(egui::RichText::new("Move History").color(text_color));
+                                    ui.separator();
+                                    
+                                    // Scroll area for move history
+                                    egui::ScrollArea::vertical()
+                                        .max_height(board_size - 50.0) // Based on board height
+                                        .show(ui, |ui| {
+                                            // Use actual move history from game_state
+                                            if let Ok(game_state) = self.game_state.lock() {
+                                                for (i, move_text) in game_state.move_history.iter().enumerate() {
+                                                    ui.horizontal(|ui| {
+                                                        // Alternate background
+                                                        if i % 2 == 0 {
+                                                            ui.visuals_mut().widgets.noninteractive.bg_fill = 
+                                                                if self.dark_mode {
+                                                                    egui::Color32::from_rgb(70, 70, 70)
+                                                                } else {
+                                                                    egui::Color32::from_rgb(250, 250, 250)
+                                                                };
+                                                        } else {
+                                                            ui.visuals_mut().widgets.noninteractive.bg_fill = 
+                                                                if self.dark_mode {
+                                                                    egui::Color32::from_rgb(50, 50, 50)
+                                                                } else {
+                                                                    egui::Color32::from_rgb(230, 230, 230)
+                                                                };
+                                                        }
+                                                        
+                                                        ui.label(egui::RichText::new(move_text.to_string()).size(16.0).color(text_color));
+                                                        
+                                                        if ui.small_button("📋").clicked() {
+                                                            info!("Copy move: {}", move_text);
+                                                        }
+                                                    });
+                                                    
+                                                    if i < game_state.move_history.len() - 1 {
+                                                        ui.add_space(2.0);
+                                                    }
+                                                }
+                                                
+                                                if game_state.move_history.is_empty() {
+                                                    ui.vertical_centered(|ui| {
+                                                        ui.add_space(20.0);
+                                                        ui.label(egui::RichText::new("No moves yet").size(16.0).color(text_color));
+                                                        ui.label(egui::RichText::new("Game will start soon...").size(14.0).color(text_color));
+                                                    });
+                                                }
+                                            }
+                                        });
+                                });
+                            });
+                    });
                 });
             });
         });
-    });
 }
 
             AppState::GameOver => {
