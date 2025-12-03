@@ -420,8 +420,13 @@ impl ChessApp {
 
                 warn!("\n\nFound move: {:?}\n\n", chessmove);
 
+                let unwrapped_move = match chessmove{
+                    Some(_) => {chessmove.unwrap()}
+                    None => { self.selected_square = None; return Err("wrong move".to_string()); }
+                };
+
                 let move_event = ClientEvent::Move {
-                    step: chessmove.unwrap(),
+                    step: unwrapped_move,
                     turn_player: if player_color == Some("white".to_string()) {
                         "black".to_string()
                     } else {
