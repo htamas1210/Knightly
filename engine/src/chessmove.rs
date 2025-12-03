@@ -231,4 +231,8 @@ impl ChessMove {
         };
         return bitmove;
     }
+
+    pub fn notation(&self) -> String {
+        return self.to_bitmove().uci_notation();
+    }
 }
