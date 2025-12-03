@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum GameEnd {
     WhiteWon(String),
     BlackWon(String),
     Draw(String),
 }
-

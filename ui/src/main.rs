@@ -1,4 +1,5 @@
 use eframe::egui;
+use engine::gameend::GameEnd;
 use engine::{boardsquare::BoardSquare, chessmove::ChessMove};
 use env_logger::Env;
 use futures_util::{SinkExt, StreamExt};
@@ -20,7 +21,7 @@ async fn main() -> anyhow::Result<(), eframe::Error> {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_fullscreen(true)
+            .with_fullscreen(false)
             .with_min_inner_size(egui::vec2(800.0, 800.0))
             .with_inner_size(egui::vec2(1920.0, 1080.0)),
         ..Default::default()
@@ -49,7 +50,7 @@ async fn main() -> anyhow::Result<(), eframe::Error> {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerMessage2 {
     GameEnd {
-        winner: String,
+        winner: GameEnd,
     },
     UIUpdate {
         fen: String,
@@ -96,7 +97,7 @@ struct GameState {
     player_color: Option<String>,
     opponent_name: Option<String>,
     match_id: Option<Uuid>,
-    game_over: Option<String>,
+    game_over: Option<GameEnd>,
     available_moves: Option<Vec<ChessMove>>,
     turn_player: Option<String>,
     move_history: Vec <String>,
@@ -288,6 +289,7 @@ impl ChessApp {
                                         state.match_id = Some(match_id.clone());
                                     }
                                     ServerMessage2::GameEnd { winner } => {
+                                        warn!("Received resignation!");
                                         state.game_over = Some(winner.clone());
                                     }
                                     ServerMessage2::LegalMoves { moves } => {
@@ -488,6 +490,7 @@ impl ChessApp {
                         self.state = AppState::InGame;
                     }
                     ServerMessage2::GameEnd { .. } => {
+                        warn!("Received resignation!");
                         info!("Game over! Transitioning to GameOver state");
                         self.state = AppState::GameOver;
                     }
@@ -501,11 +504,6 @@ impl ChessApp {
                     }
                     ServerMessage2::UIUpdate { fen, turn_player } => {
                         info!("Board updated with FEN: {}", fen);
-                        // UI will automatically redraw with new FEN
-                        /*if let Ok(mut game_state) = self.game_state.lock() {
-                            game_state.fen = fen;
-                            game_state.turn_player = Some(turn_player);
-                        }*/
                     }
                     _ => {}
                 }
@@ -1112,7 +1110,7 @@ impl eframe::App for ChessApp {
                 ui.add_space(20.0);
 
                 if let Some(reason) = &game_state.game_over {
-                    ui.label(egui::RichText::new(format!("Result: {}", reason)).color(text_color));
+                    ui.label(egui::RichText::new(format!("Result: {:?}", reason)).color(text_color));
                 }
 
                 ui.add_space(20.0);

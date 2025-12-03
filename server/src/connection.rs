@@ -243,6 +243,8 @@ pub async fn handle_connection(
                         .current_match
                         .unwrap();
 
+                    println!("\n\nstep: {:?}", step);
+
                     {
                         info!("updating board state in match: {}", &match_id);
                         let mut matches = matches.lock().await;
@@ -355,13 +357,7 @@ pub async fn handle_connection(
                     let _ = broadcast_to_match(
                         &connections,
                         &matches,
-                        connections
-                            .lock()
-                            .await
-                            .get(&player_id)
-                            .unwrap()
-                            .current_match
-                            .unwrap(),
+                        fuck_id.clone(),
                         &serde_json::to_string(&fuck).unwrap(),
                     )
                     .await;
