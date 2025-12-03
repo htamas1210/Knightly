@@ -1,4 +1,5 @@
 use eframe::egui;
+use egui::Color32;
 use engine::gameend::GameEnd;
 use engine::{boardsquare::BoardSquare, chessmove::ChessMove};
 use env_logger::Env;
@@ -55,6 +56,7 @@ pub enum ServerMessage2 {
     UIUpdate {
         fen: String,
         turn_player: String,
+        move_history: Vec<String>,
     },
     MatchFound {
         match_id: Uuid,
@@ -180,8 +182,6 @@ impl Default for ChessApp {
             rx_from_network: None,
             selected_square: None,
             server_ip: "127.0.0.1".to_string(),
-            
-            // TODO: for the online server (reverse proxy?)
             start_local_server_instance: false,
         }
     }
@@ -275,11 +275,14 @@ impl ChessApp {
                             // Update game state
                             if let Ok(mut state) = game_state_clone.lock() {
                                 match &server_msg {
-                                    ServerMessage2::UIUpdate { fen, turn_player } => {
+                                    ServerMessage2::UIUpdate { fen, turn_player, move_history } => {
                                         info!("raw fen: {}", &fen);
                                         state.fen = fen.clone();
                                         state.turn_player = Some(turn_player.clone());
                                         warn!("turn player: {}", &state.turn_player.clone().unwrap());
+
+                                        state.move_history = move_history.clone();
+                                        info!("MOVE HISTORY: {:?}", move_history);
                                     }
                                     ServerMessage2::MatchFound {
                                         color,
@@ -425,6 +428,7 @@ impl ChessApp {
                     None => { self.selected_square = None; return Err("wrong move".to_string()); }
                 };
 
+
                 let move_event = ClientEvent::Move {
                     step: unwrapped_move,
                     turn_player: if player_color == Some("white".to_string()) {
@@ -509,7 +513,7 @@ impl ChessApp {
                             self.state = AppState::FindingMatch;
                         }
                     }
-                    ServerMessage2::UIUpdate { fen, turn_player } => {
+                    ServerMessage2::UIUpdate { fen, turn_player, move_history } => {
                         if let Some(tx) = &self.tx_to_network {
                             let _ = tx.send(ClientEvent::RequestLegalMoves {fen: self.game_state.lock().unwrap().fen.clone()});
                         }
@@ -1051,7 +1055,7 @@ impl eframe::App for ChessApp {
                                                                 if self.dark_mode {
                                                                     egui::Color32::from_rgb(70, 70, 70)
                                                                 } else {
-                                                                    egui::Color32::from_rgb(250, 250, 250)
+                                                                    egui::Color32::from_rgb(70, 250, 250)
                                                                 };
                                                         } else {
                                                             ui.visuals_mut().widgets.noninteractive.bg_fill = 
@@ -1061,12 +1065,13 @@ impl eframe::App for ChessApp {
                                                                     egui::Color32::from_rgb(230, 230, 230)
                                                                 };
                                                         }
-                                                        
-                                                        ui.label(egui::RichText::new(move_text.to_string()).size(16.0).color(text_color));
-                                                        
-                                                        if ui.small_button("📋").clicked() {
-                                                            info!("Copy move: {}", move_text);
-                                                        }
+
+                                                        if i % 2 == 0 {
+                                                            ui.label(egui::RichText::new(move_text.to_string()).size(25.0).color(Color32::from_rgb(255, 0, 0)));
+                                                        }else{
+
+                                                            ui.label(egui::RichText::new(move_text.to_string()).size(25.0).color(Color32::from_rgb(0, 255, 0)));
+                                                                    }
                                                     });
                                                     
                                                     if i < game_state.move_history.len() - 1 {
@@ -1258,7 +1263,7 @@ mod tests {
             r#"{"UIUpdate":{"fen":"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1","turn_player":"white"}}"#;
         let message: ServerMessage2 = serde_json::from_str(ui_update_json).unwrap();
         match message {
-            ServerMessage2::UIUpdate { fen, turn_player } => {
+            ServerMessage2::UIUpdate { fen, turn_player, move_history } => {
                 assert!(fen.contains("rnbqkbnr"));
                 assert_eq!(turn_player, "white");
             }

@@ -39,12 +39,6 @@ pub fn new_waiting_queue() -> WaitingQueue {
     Arc::new(Mutex::new(VecDeque::new()))
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Step {
-    pub from: String,
-    pub to: String,
-}
-
 #[derive(Serialize, Deserialize)]
 pub enum ServerMessage2 {
     GameEnd {
@@ -53,6 +47,7 @@ pub enum ServerMessage2 {
     UIUpdate {
         fen: String,
         turn_player: String,
+        move_history: Vec<String>,
     },
     MatchFound {
         match_id: Uuid,
@@ -102,7 +97,7 @@ pub struct GameMatch {
     pub player_white: Uuid,
     pub player_black: Uuid,
     pub board_state: String,
-    pub move_history: Vec<Step>,
+    pub move_history: Vec<String>,
 }
 
 // Message sending utilities
@@ -258,17 +253,24 @@ pub async fn handle_connection(
                             "board after engine fn: {}",
                             matches.get_mut(&match_id).unwrap().board_state.clone()
                         );
+
+                        matches
+                            .get_mut(&match_id)
+                            .unwrap()
+                            .move_history
+                            .push(step.clone().notation());
                     }
 
                     let message = ServerMessage2::UIUpdate {
-                        fen: matches
-                            .lock()
-                            .await
-                            .get(&match_id)
-                            .unwrap()
-                            .board_state
-                            .clone(),
+                        fen: {
+                            let mut matches = matches.lock().await;
+                            matches.get(&match_id).unwrap().board_state.clone()
+                        },
                         turn_player: turn_player,
+                        move_history: {
+                            let mut matches = matches.lock().await;
+                            matches.get(&match_id).unwrap().move_history.clone()
+                        },
                     };
 
                     let _ = broadcast_to_match(
