@@ -193,12 +193,12 @@ pub async fn handle_connection(
 
     info!("id: {}", &player_id);
 
-    error!("\n\n\n");
+    println!("\n\n\n");
     println!(
         "{:?}",
         engine::get_available_moves("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     );
-    error!("\n\n\n");
+    println!("\n\n\n");
 
     // Message processing loop
     while let Some(Ok(message)) = read.next().await {
@@ -243,7 +243,7 @@ pub async fn handle_connection(
                         .current_match
                         .unwrap();
 
-                    println!("\n\nstep: {:?}", step);
+                    println!("\n\nstep: {:?}\n", step);
 
                     {
                         info!("updating board state in match: {}", &match_id);
@@ -253,7 +253,13 @@ pub async fn handle_connection(
                                 &matches.get(&match_id).unwrap().board_state,
                                 &step,
                             );
+
+                        info!(
+                            "board after engine fn: {}",
+                            matches.get_mut(&match_id).unwrap().board_state.clone()
+                        );
                     }
+
                     let message = ServerMessage2::UIUpdate {
                         fen: matches
                             .lock()

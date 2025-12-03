@@ -276,8 +276,10 @@ impl ChessApp {
                             if let Ok(mut state) = game_state_clone.lock() {
                                 match &server_msg {
                                     ServerMessage2::UIUpdate { fen, turn_player } => {
+                                        info!("raw fen: {}", &fen);
                                         state.fen = fen.clone();
                                         state.turn_player = Some(turn_player.clone());
+                                        warn!("turn player: {}", &state.turn_player.clone().unwrap());
                                     }
                                     ServerMessage2::MatchFound {
                                         color,
@@ -503,6 +505,9 @@ impl ChessApp {
                         }
                     }
                     ServerMessage2::UIUpdate { fen, turn_player } => {
+                        if let Some(tx) = &self.tx_to_network {
+                            let _ = tx.send(ClientEvent::RequestLegalMoves {fen: self.game_state.lock().unwrap().fen.clone()});
+                        }
                         info!("Board updated with FEN: {}", fen);
                     }
                     _ => {}
@@ -957,7 +962,7 @@ impl eframe::App for ChessApp {
                                         let text_color = if piece_char.is_uppercase() {
                                             egui::Color32::WHITE
                                         } else {
-                                            egui::Color32::BLACK
+                                             egui::Color32::BLACK
                                         };
 
                                         board_painter.text(
@@ -986,26 +991,12 @@ impl eframe::App for ChessApp {
                                         if let Some(click_pos) = ui.ctx().pointer_interact_pos() {
                                             if rect.contains(click_pos) {
                                                 let res = self.handle_click(display_row, display_col);
-                                            match res {
-                                                Ok(_) => {
-                                                    if let Some(tx) = &self.tx_to_network {
-                                                        info!("requesting legal moves from server");
-                                                        let _ = tx.send(
-                                                            ClientEvent::RequestLegalMoves {
-                                                                fen: self
-                                                                    .game_state
-                                                                    .lock()
-                                                                    .unwrap()
-                                                                    .fen
-                                                                    .clone(),
-                                                            },
-                                                        );
-                                                    };
+                                                match res {
+                                                    Ok(_) => {}
+                                                    Err(e) => {
+                                                        error!("{}", e);
+                                                    }
                                                 }
-                                                Err(e) => {
-                                                    error!("{}", e);
-                                                }
-                                            }
                                             }
                                         }
                                     }
