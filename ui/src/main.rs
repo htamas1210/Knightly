@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<(), eframe::Error> {
+    // Set up logging
     let env = Env::default().filter_or("MY_LOG_LEVEL", "INFO");
     env_logger::init_from_env(env);
     warn!("Initialized logger");
@@ -227,9 +228,182 @@ impl ChessApp {
             ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(
                 egui::Vec2::new(resolution.0 as f32, resolution.1 as f32)
             ));
+        let server_port = self.server_port.clone();
+        let username = self.username.clone();
+        let game_state = self.game_state.clone();
+
+        // Create channels for communication
+        let (tx_to_network, rx_from_ui) = mpsc::unbounded_channel();
+        let (tx_to_ui, rx_from_network) = mpsc::unbounded_channel();
+
+        self.tx_to_network = Some(tx_to_network);
+        self.rx_from_network = Some(rx_from_network);
+
+        self.state = AppState::Connecting;
+
+        // Spawn network connection task
+        tokio::spawn(async move {
+            if let Err(e) =
+                Self::network_handler(server_port, username, rx_from_ui, tx_to_ui, game_state).await
+            {
+                error!("Network handler error: {}", e);
+            }
+        });
+    }
+
+    async fn network_handler(
+        server_port: String,
+        username: String,
+        mut rx_from_ui: mpsc::UnboundedReceiver<ClientEvent>,
+        tx_to_ui: mpsc::UnboundedSender<ServerMessage2>,
+        game_state: Arc<Mutex<GameState>>,
+    ) -> anyhow::Result<()> {
+        // Build WebSocket URL
+        let server_address = format!("ws://127.0.0.1:{}", server_port);
+        let url = Url::parse(&server_address)?;
+
+        info!("Connecting to: {}", server_address);
+        let (ws_stream, _) = connect_async(url).await?;
+        let (mut write, mut read) = ws_stream.split();
+
+        // Send initial join message and immediately send FindMatch
+        let join_event = ClientEvent::Join { username };
+        write
+            .send(Message::Text(serde_json::to_string(&join_event)?))
+            .await?;
+        info!("Sent Join event");
+
+        // Send FindMatch immediately after joining
+        let find_match_event = ClientEvent::FindMatch;
+        write
+            .send(Message::Text(serde_json::to_string(&find_match_event)?))
+            .await?;
+        info!("Sent FindMatch event");
+
+        // Spawn reader task
+        let tx_to_ui_clone = tx_to_ui.clone();
+        let game_state_clone = game_state.clone();
+        let reader_handle = tokio::spawn(async move {
+            while let Some(message) = read.next().await {
+                match message {
+                    Ok(msg) if msg.is_text() => {
+                        let text = msg.to_text().unwrap();
+                        info!("Received: {}", text);
+
+                        if let Ok(server_msg) = serde_json::from_str::<ServerMessage2>(text) {
+                            // Update game state
+                            if let Ok(mut state) = game_state_clone.lock() {
+                                match &server_msg {
+                                    ServerMessage2::UIUpdate { fen } => {
+                                        state.fen = fen.clone();
+                                    }
+                                    ServerMessage2::MatchFound {
+                                        color,
+                                        opponent_name,
+                                        match_id,
+                                    } => {
+                                        state.player_color = Some(color.clone());
+                                        state.opponent_name = Some(opponent_name.clone());
+                                        state.match_id = Some(match_id.clone());
+                                    }
+                                    ServerMessage2::GameEnd { winner } => {
+                                        state.game_over = Some(winner.clone());
+                                    }
+                                    _ => {}
+                                }
+                            }
+
+                            // Send to UI
+                            if let Err(e) = tx_to_ui_clone.send(server_msg) {
+                                error!("Failed to send to UI: {}", e);
+                                break;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("WebSocket error: {}", e);
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        });
+
+        // Writer task (main thread)
+        while let Some(event) = rx_from_ui.recv().await {
+            let message = serde_json::to_string(&event)?;
+            write.send(Message::Text(message)).await?;
+            info!("Sent event to server: {:?}", event);
         }
-        
-        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(self.fullscreen));
+
+        // Wait for reader to finish
+        let _ = reader_handle.await;
+
+        Ok(())
+    }
+
+    fn handle_click(&mut self, row: usize, col: usize) {
+        if let Some((from_row, from_col)) = self.selected_square {
+            // Send move to server
+            if let Some(tx) = &self.tx_to_network {
+                // TODO: kinyerni a tenyleges kivalasztott babut
+                let chess_move = ChessMove::Quiet {
+                    piece_type: engine::piecetype::PieceType::WhiteKing,
+                    from_square: BoardSquare { x: 0, y: 1 },
+                    to_square: BoardSquare { x: 2, y: 2 },
+                    promotion_piece: None,
+                };
+                let move_event = ClientEvent::Move { step: chess_move };
+                let _ = tx.send(move_event);
+            }
+            self.selected_square = None;
+        } else {
+            // Select square
+            self.selected_square = Some((row, col));
+        }
+    }
+
+    fn fen_to_board(&self, fen: &str) -> [[char; 8]; 8] {
+        let mut board = [[' '; 8]; 8];
+        let parts: Vec<&str> = fen.split_whitespace().collect();
+        let board_str = parts[0];
+
+        let mut row = 0;
+        let mut col = 0;
+
+        for c in board_str.chars() {
+            if c == '/' {
+                row += 1;
+                col = 0;
+            } else if c.is_digit(10) {
+                col += c.to_digit(10).unwrap() as usize;
+            } else {
+                if row < 8 && col < 8 {
+                    board[row][col] = c;
+                }
+                col += 1;
+            }
+        }
+
+        board
+    }
+
+    fn chess_char_to_piece(&self, c: char) -> &'static str {
+        match c {
+            'K' => "♚",
+            'Q' => "♛",
+            'R' => "♜",
+            'B' => "♝",
+            'N' => "♞",
+            'P' => "♟︎",
+            'k' => "♚",
+            'q' => "♛",
+            'r' => "♜",
+            'b' => "♝",
+            'n' => "♞",
+            'p' => "♟︎",
+            _ => "",
+        }
     }
     async fn network_handler(
         server_port: String,
@@ -672,6 +846,25 @@ impl eframe::App for ChessApp {
                                 std::process::exit(0);
                             }
                         });
+                        ui.horizontal(|ui| {
+                            ui.label("Username:");
+                            ui.text_edit_singleline(&mut self.username);
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Server Port:");
+                            ui.text_edit_singleline(&mut self.server_port);
+                        });
+
+                        ui.add_space(20.0);
+
+                        if ui.button("Connect & Play").clicked() {
+                            self.connect_to_server();
+                        }
+
+                        if ui.button("Quit").clicked() {
+                            std::process::exit(0);
+                        }
                     });
             }
             AppState::Settings => {
@@ -1130,7 +1323,6 @@ impl eframe::App for ChessApp {
         ctx.request_repaint();
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1150,6 +1342,125 @@ mod tests {
     }
 
     // ... other tests remain the same ...
+
+
+    #[test]
+    fn test_default_game_state() {
+        let game_state = GameState::default();
+        assert_eq!(
+            game_state.fen,
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        );
+        assert_eq!(game_state.player_color, None);
+        assert_eq!(game_state.opponent_name, None);
+        assert_eq!(game_state.match_id, None);
+        assert_eq!(game_state.game_over, None);
+    }
+
+    #[test]
+    fn test_fen_to_board_starting_position() {
+        let app = ChessApp::default();
+        let board = app.fen_to_board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+
+        // Test black pieces on rank 0
+        assert_eq!(board[0][0], 'r');
+        assert_eq!(board[0][1], 'n');
+        assert_eq!(board[0][2], 'b');
+        assert_eq!(board[0][3], 'q');
+        assert_eq!(board[0][4], 'k');
+        assert_eq!(board[0][5], 'b');
+        assert_eq!(board[0][6], 'n');
+        assert_eq!(board[0][7], 'r');
+
+        // Test black pawns on rank 1
+        for col in 0..8 {
+            assert_eq!(board[1][col], 'p');
+        }
+
+        // Test empty squares in the middle
+        for row in 2..6 {
+            for col in 0..8 {
+                assert_eq!(board[row][col], ' ');
+            }
+        }
+
+        // Test white pawns on rank 6
+        for col in 0..8 {
+            assert_eq!(board[6][col], 'P');
+        }
+
+        // Test white pieces on rank 7
+        assert_eq!(board[7][0], 'R');
+        assert_eq!(board[7][1], 'N');
+        assert_eq!(board[7][2], 'B');
+        assert_eq!(board[7][3], 'Q');
+        assert_eq!(board[7][4], 'K');
+        assert_eq!(board[7][5], 'B');
+        assert_eq!(board[7][6], 'N');
+        assert_eq!(board[7][7], 'R');
+    }
+
+    #[test]
+    fn test_fen_to_board_with_numbers() {
+        let app = ChessApp::default();
+        let board = app.fen_to_board("4k3/8/8/8/8/8/8/4K3");
+
+        // Test empty squares around kings
+        for row in 0..8 {
+            for col in 0..8 {
+                if (row == 0 && col == 4) || (row == 7 && col == 4) {
+                    continue; // Skip king positions
+                }
+                assert_eq!(board[row][col], ' ');
+            }
+        }
+
+        // Test king positions
+        assert_eq!(board[0][4], 'k'); // black king
+        assert_eq!(board[7][4], 'K'); // white king
+    }
+
+    #[test]
+    fn test_chess_char_to_piece() {
+        let app = ChessApp::default();
+
+        // Test white pieces
+        assert_eq!(app.chess_char_to_piece('K'), "♚");
+        assert_eq!(app.chess_char_to_piece('Q'), "♛");
+        assert_eq!(app.chess_char_to_piece('R'), "♜");
+        assert_eq!(app.chess_char_to_piece('B'), "♝");
+        assert_eq!(app.chess_char_to_piece('N'), "♞");
+        assert_eq!(app.chess_char_to_piece('P'), "♟︎");
+
+        // Test black pieces
+        assert_eq!(app.chess_char_to_piece('k'), "♚");
+        assert_eq!(app.chess_char_to_piece('q'), "♛");
+        assert_eq!(app.chess_char_to_piece('r'), "♜");
+        assert_eq!(app.chess_char_to_piece('b'), "♝");
+        assert_eq!(app.chess_char_to_piece('n'), "♞");
+        assert_eq!(app.chess_char_to_piece('p'), "♟︎");
+
+        // Test invalid piece
+        assert_eq!(app.chess_char_to_piece('X'), "");
+        assert_eq!(app.chess_char_to_piece(' '), "");
+    }
+
+    #[test]
+    fn test_chess_app_default() {
+        let app = ChessApp::default();
+
+        assert_eq!(app.server_port, "9001");
+        assert_eq!(app.username, "Player");
+        assert!(app.tx_to_network.is_none());
+        assert!(app.rx_from_network.is_none());
+        assert!(app.selected_square.is_none());
+
+        // Verify initial state is MainMenu
+        match app.state {
+            AppState::MainMenu => (),
+            _ => panic!("Expected initial state to be MainMenu"),
+        }
+    }
 
     #[test]
     fn test_game_state_clone() {
@@ -1173,6 +1484,76 @@ mod tests {
 
     #[test]
     fn test_process_network_messages_game_over() {
+    }
+
+    #[test]
+    fn test_handle_click_selection() {
+        let mut app = ChessApp::default();
+
+        // Initially no square should be selected
+        assert_eq!(app.selected_square, None);
+
+        // Click on a square should select it
+        app.handle_click(3, 4);
+        assert_eq!(app.selected_square, Some((3, 4)));
+
+        // Click on another square should deselect and send move (if tx exists)
+        // Since we don't have a real tx in tests, we just verify the selection is cleared
+        app.handle_click(4, 4);
+        assert_eq!(app.selected_square, None);
+    }
+
+    #[test]
+    fn test_process_network_messages_match_found() {
+        let mut app = ChessApp::default();
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        app.rx_from_network = Some(rx);
+
+        // Send a MatchFound message
+        let match_id = Uuid::new_v4();
+        let message = ServerMessage2::MatchFound {
+            match_id,
+            color: "white".to_string(),
+            opponent_name: "TestOpponent".to_string(),
+        };
+
+        tx.send(message).unwrap();
+
+        // Process the message
+        app.process_network_messages();
+
+        // State should transition to InGame
+        match app.state {
+            AppState::InGame => (),
+            _ => panic!("Expected state to transition to InGame"),
+        }
+    }
+
+    #[test]
+    fn test_process_network_messages_game_over() {
+        let mut app = ChessApp::default();
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        app.rx_from_network = Some(rx);
+
+        // Send a GameEnd message
+        let message = ServerMessage2::GameEnd {
+            winner: "White won by checkmate".to_string(),
+        };
+
+        tx.send(message).unwrap();
+
+        // Process the message
+        app.process_network_messages();
+
+        // State should transition to GameOver
+        match app.state {
+            AppState::GameOver => (),
+            _ => panic!("Expected state to transition to GameOver"),
+        }
+    }
+
+    #[test]
+    fn test_process_network_messages_ui_update() {
         let mut app = ChessApp::default();
         let (tx, mut rx) = mpsc::unbounded_channel();
         app.rx_from_network = Some(rx);
@@ -1180,6 +1561,10 @@ mod tests {
         // Fixed: Use GameEnd enum instead of String
         let message = ServerMessage2::GameEnd {
             winner: GameEnd::WhiteWon("Checkmate".to_string()),
+        // Send a UIUpdate message
+        let new_fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1".to_string();
+        let message = ServerMessage2::UIUpdate {
+            fen: new_fen.clone(),
         };
 
         tx.send(message).unwrap();
@@ -1222,6 +1607,93 @@ mod tests {
             step: chess_move, 
             turn_player: "white".to_string() 
         };
+        let serialized = serde_json::to_string(&move_event).unwrap();
+        assert!(serialized.contains("Move"));
+
+        // Test Resign event
+        let resign_event = ClientEvent::Resign;
+        let serialized = serde_json::to_string(&resign_event).unwrap();
+        assert!(serialized.contains("Resign"));
+    }
+
+    #[test]
+        // Game state should be updated with new FEN
+        let game_state = app.game_state.lock().unwrap();
+        assert_eq!(game_state.fen, new_fen);
+    }
+
+    #[test]
+    fn test_process_network_messages_ok_response() {
+        let mut app = ChessApp::default();
+        app.state = AppState::Connecting;
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        app.rx_from_network = Some(rx);
+
+        // Send an Ok message
+        let message = ServerMessage2::Ok { response: Ok(()) };
+
+        tx.send(message).unwrap();
+
+        // Process the message
+        app.process_network_messages();
+
+        // State should transition to FindingMatch when in Connecting state
+        match app.state {
+            AppState::FindingMatch => (),
+            _ => panic!("Expected state to transition to FindingMatch"),
+        }
+    }
+
+    #[test]
+    fn test_fen_edge_cases() {
+        let app = ChessApp::default();
+
+        // Test empty board
+        let empty_board = app.fen_to_board("8/8/8/8/8/8/8/8");
+        for row in 0..8 {
+            for col in 0..8 {
+                assert_eq!(empty_board[row][col], ' ');
+            }
+        }
+
+        // Test FEN with multiple digit numbers
+        let board = app.fen_to_board("k7/8/8/8/8/8/8/7K");
+        assert_eq!(board[0][0], 'k');
+        assert_eq!(board[7][7], 'K');
+
+        // Test FEN with mixed pieces and numbers
+        let board = app.fen_to_board("r3k2r/8/8/8/8/8/8/R3K2R");
+        assert_eq!(board[0][0], 'r');
+        assert_eq!(board[0][4], 'k');
+        assert_eq!(board[0][7], 'r');
+        assert_eq!(board[7][0], 'R');
+        assert_eq!(board[7][4], 'K');
+        assert_eq!(board[7][7], 'R');
+    }
+
+    #[tokio::test]
+    async fn test_client_event_serialization() {
+        // Test Join event
+        let join_event = ClientEvent::Join {
+            username: "test".to_string(),
+        };
+        let serialized = serde_json::to_string(&join_event).unwrap();
+        assert!(serialized.contains("Join"));
+        assert!(serialized.contains("test"));
+
+        // Test FindMatch event
+        let find_match_event = ClientEvent::FindMatch;
+        let serialized = serde_json::to_string(&find_match_event).unwrap();
+        assert!(serialized.contains("FindMatch"));
+
+        // Test Move event
+        let chess_move = ChessMove::Quiet {
+            piece_type: engine::piecetype::PieceType::WhiteKing,
+            from_square: BoardSquare { x: 0, y: 1 },
+            to_square: BoardSquare { x: 2, y: 2 },
+            promotion_piece: None,
+        };
+        let move_event = ClientEvent::Move { step: chess_move };
         let serialized = serde_json::to_string(&move_event).unwrap();
         assert!(serialized.contains("Move"));
 
@@ -1281,6 +1753,14 @@ mod tests {
                 }
             }
             _ => panic!("Expected GameEnd message"),
+        }
+            r#"{"UIUpdate":{"fen":"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"}}"#;
+        let message: ServerMessage2 = serde_json::from_str(ui_update_json).unwrap();
+        match message {
+            ServerMessage2::UIUpdate { fen } => {
+                assert!(fen.contains("rnbqkbnr"));
+            }
+            _ => panic!("Expected UIUpdate message"),
         }
     }
 }
