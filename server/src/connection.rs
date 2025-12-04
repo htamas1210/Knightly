@@ -39,12 +39,6 @@ pub fn new_waiting_queue() -> WaitingQueue {
     Arc::new(Mutex::new(VecDeque::new()))
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Step {
-    pub from: String,
-    pub to: String,
-}
-
 #[derive(Serialize, Deserialize)]
 pub enum ServerMessage2 {
     GameEnd {
@@ -52,11 +46,16 @@ pub enum ServerMessage2 {
     },
     UIUpdate {
         fen: String,
+        turn_player: String,
+        move_history: Vec<String>,
     },
     MatchFound {
         match_id: Uuid,
         color: String,
         opponent_name: String,
+    },
+    LegalMoves {
+        moves: Vec<ChessMove>,
     },
     Ok {
         response: Result<(), String>,
@@ -66,12 +65,22 @@ pub enum ServerMessage2 {
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum ClientEvent {
-    Join { username: String },
+    Join {
+        username: String,
+    },
     FindMatch,
-    Move { step: ChessMove },
+    Move {
+        step: ChessMove,
+        turn_player: String,
+    },
     Resign,
-    Chat { text: String },
-    RequestLegalMoves { fen: String },
+    Chat {
+        text: String,
+    },
+    RequestLegalMoves {
+        fen: String,
+    },
+    CloseConnection,
 }
 
 #[derive(Debug)]
@@ -88,7 +97,7 @@ pub struct GameMatch {
     pub player_white: Uuid,
     pub player_black: Uuid,
     pub board_state: String,
-    pub move_history: Vec<Step>,
+    pub move_history: Vec<String>,
 }
 
 // Message sending utilities
@@ -179,6 +188,13 @@ pub async fn handle_connection(
 
     info!("id: {}", &player_id);
 
+    println!("\n\n\n");
+    println!(
+        "{:?}",
+        engine::get_available_moves("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    );
+    println!("\n\n\n");
+
     // Message processing loop
     while let Some(Ok(message)) = read.next().await {
         if message.is_text() {
@@ -213,7 +229,7 @@ pub async fn handle_connection(
                     info!("Appended {} to the waiting queue", player_id);
                     info!("queue {:?}", wait_queue);
                 }
-                Move { step } => {
+                Move { step, turn_player } => {
                     let match_id = connections
                         .lock()
                         .await
@@ -221,6 +237,8 @@ pub async fn handle_connection(
                         .unwrap()
                         .current_match
                         .unwrap();
+
+                    println!("\n\nstep: {:?}\n", step);
 
                     {
                         info!("updating board state in match: {}", &match_id);
@@ -230,15 +248,29 @@ pub async fn handle_connection(
                                 &matches.get(&match_id).unwrap().board_state,
                                 &step,
                             );
-                    }
-                    let message = ServerMessage2::UIUpdate {
-                        fen: matches
-                            .lock()
-                            .await
-                            .get(&match_id)
+
+                        info!(
+                            "board after engine fn: {}",
+                            matches.get_mut(&match_id).unwrap().board_state.clone()
+                        );
+
+                        matches
+                            .get_mut(&match_id)
                             .unwrap()
-                            .board_state
-                            .clone(),
+                            .move_history
+                            .push(step.clone().notation());
+                    }
+
+                    let message = ServerMessage2::UIUpdate {
+                        fen: {
+                            let mut matches = matches.lock().await;
+                            matches.get(&match_id).unwrap().board_state.clone()
+                        },
+                        turn_player: turn_player,
+                        move_history: {
+                            let mut matches = matches.lock().await;
+                            matches.get(&match_id).unwrap().move_history.clone()
+                        },
                     };
 
                     let _ = broadcast_to_match(
@@ -265,7 +297,7 @@ pub async fn handle_connection(
                                     &serde_json::to_string(&message).unwrap(),
                                 )
                                 .await;
-                                clean_up_match(&matches, &match_id);
+                                clean_up_match(&matches, &match_id).await;
                             }
                             None => {
                                 info!("No winner match continues. Id: {}", &match_id);
@@ -276,9 +308,10 @@ pub async fn handle_connection(
                 RequestLegalMoves { fen } => {
                     info!("Requesting legal moves player: {}", &player_id);
                     let moves = get_available_moves(&fen);
+                    let message = ServerMessage2::LegalMoves { moves };
                     let _ = send_message_to_player_connection(
                         connections.lock().await.get_mut(&player_id),
-                        &serde_json::to_string(&moves).unwrap(),
+                        &serde_json::to_string(&message).unwrap(),
                     )
                     .await;
                     info!("Sent moves to player: {}", player_id);
@@ -329,20 +362,18 @@ pub async fn handle_connection(
                         }
                     };
 
-                    broadcast_to_match(
+                    let _ = broadcast_to_match(
                         &connections,
                         &matches,
-                        connections
-                            .lock()
-                            .await
-                            .get(&player_id)
-                            .unwrap()
-                            .current_match
-                            .unwrap(),
+                        fuck_id.clone(),
                         &serde_json::to_string(&fuck).unwrap(),
                     )
                     .await;
-                    clean_up_match(&matches, fuck_id);
+                    clean_up_match(&matches, fuck_id).await;
+                }
+                CloseConnection => {
+                    warn!("Closing connection for: {}", &player_id);
+                    break;
                 }
                 _ => {
                     warn!("Not known client event");

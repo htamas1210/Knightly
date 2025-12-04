@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum PieceType {
     WhitePawn,
     WhiteKnight,
@@ -17,8 +17,7 @@ pub enum PieceType {
 }
 
 impl PieceType {
-
-    pub(in super) fn from_index(idx: u8) -> Self {
+    pub(super) fn from_index(idx: u8) -> Self {
         return match idx {
             0 => PieceType::WhitePawn,
             1 => PieceType::WhiteKnight,
@@ -32,10 +31,10 @@ impl PieceType {
             9 => PieceType::BlackRook,
             10 => PieceType::BlackQueen,
             11 => PieceType::BlackKing,
-            _ => panic!("invalid piece index! should NEVER appear")
-        }
+            _ => panic!("invalid piece index! should NEVER appear"),
+        };
     }
-    pub(in super) fn to_index(&self) -> u8 {
+    pub(super) fn to_index(&self) -> u8 {
         return match self {
             &PieceType::WhitePawn => 0,
             &PieceType::WhiteKnight => 1,
@@ -48,7 +47,8 @@ impl PieceType {
             &PieceType::BlackBishop => 8,
             &PieceType::BlackRook => 9,
             &PieceType::BlackQueen => 10,
-            &PieceType::BlackKing => 11
-        }
+            &PieceType::BlackKing => 11,
+        };
     }
 }
+

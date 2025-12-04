@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BoardSquare {
     pub x: usize,
     pub y: usize,
@@ -28,10 +28,10 @@ impl BoardSquare {
         return Self { x: x, y: y };
     }
 
-    pub(in super) fn from_index(idx: u8) -> Self {
+    pub(super) fn from_index(idx: u8) -> Self {
         let file = idx % 8;
         let rank = idx / 8;
-        
+
         #[cfg(debug_assertions)]
         {
             if !(0..8).contains(&rank) {
@@ -39,10 +39,12 @@ impl BoardSquare {
             }
         }
 
-        return Self {x: file as usize, y: rank as usize};
+        return Self {
+            x: file as usize,
+            y: rank as usize,
+        };
     }
-    pub(in super) fn to_index(&self) -> u8 {
+    pub(super) fn to_index(&self) -> u8 {
         return (8 * self.y + self.x) as u8;
     }
 }
-
