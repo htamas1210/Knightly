@@ -12,9 +12,6 @@ jobs:
     name: Build and release (master only)
     runs-on: self-hosted
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Build Engine for Linux
         run: |
           cd $(git rev-parse --show-toplevel)
