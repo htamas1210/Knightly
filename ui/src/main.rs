@@ -228,6 +228,7 @@ impl ChessApp {
                 egui::Vec2::new(resolution.0 as f32, resolution.1 as f32)
             ));
         }
+        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(self.fullscreen));
     }
     async fn network_handler(
         server_port: String,
